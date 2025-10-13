@@ -52,7 +52,7 @@ A comprehensive, GUI-based tool designed to streamline the complete bug bounty h
    ```bash
    # Option 1: Download the BugBountyHunter.py file directly
    # Option 2: Clone if part of a repository
-   git clone <repository-url>
+   git clone https://github.com/thomasfulloonis-cmd/bugbountyhunter.git
    cd bugbountyhunter
    ```
 
