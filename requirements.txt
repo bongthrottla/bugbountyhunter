@@ -1,0 +1,16 @@
+# BugBountyHunter Pro - Python Dependencies
+# Core Python libraries (usually included with Python)
+tkinter  # GUI framework (usually built-in)
+sqlite3  # Database (usually built-in) 
+threading  # Multithreading (usually built-in)
+subprocess  # Process management (usually built-in)
+json  # JSON handling (usually built-in)
+datetime  # Date/time utilities (usually built-in)
+pathlib  # Path handling (usually built-in)
+re  # Regular expressions (usually built-in)
+os  # Operating system interface (usually built-in)
+sys  # System-specific parameters (usually built-in)
+
+# Additional packages (install if needed)
+# pip install requests  # For HTTP requests (optional)
+# pip install colorama  # For colored terminal output (optional)
