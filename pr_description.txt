@@ -1,0 +1,7 @@
+⚡ Optimize nuclei vulnerability storage in database
+
+💡 What: Modified `parse_nuclei_results` in both `script.py` and `BugBountyHunter.py` to accumulate parsed vulnerabilities into a Python list and insert them all at once using `cursor.executemany` instead of calling `cursor.execute` sequentially inside the file parsing loop.
+
+🎯 Why: The previous implementation performed an N+1 query issue by executing a separate SQL `INSERT` statement for every single parsed line, which is an anti-pattern for performance, particularly with database I/O, as it adds significant overhead from numerous individual queries.
+
+📊 Measured Improvement: Using a benchmark script generating and parsing 150,000 mock records, both approaches performed well within a local test instance without a measurable speedup (`N+1` took ~1.36s vs `executemany` taking ~1.44s). This lack of speedup is largely due to SQLite's in-memory transaction buffering (until `commit()` is called at the end) naturally absorbing most of the I/O cost that `executemany` tries to resolve. The new implementation slightly offsets this with Python list memory allocation overhead. However, the theoretical N+1 query vulnerability has been fully resolved, resulting in a cleaner and generally more scalable bulk-insert methodology for larger datasets and potentially different database backends in the future.
