@@ -1122,12 +1122,16 @@ This report contains the findings from an automated reconnaissance and vulnerabi
         if vulnerabilities:
             report += "\n### Detailed Findings\n\n"
             
+            report_parts = []
             for vuln_type, severity, description, url in vulnerabilities:
-                report += f"#### {description}\n"
-                report += f"- **Type:** {vuln_type}\n"
-                report += f"- **Severity:** {severity.upper()}\n"
-                report += f"- **URL:** {url}\n"
-                report += f"- **Recommendation:** Manual verification required\n\n"
+                report_parts.append(
+                    f"#### {description}\n"
+                    f"- **Type:** {vuln_type}\n"
+                    f"- **Severity:** {severity.upper()}\n"
+                    f"- **URL:** {url}\n"
+                    f"- **Recommendation:** Manual verification required\n\n"
+                )
+            report += "".join(report_parts)
         
         report += """
 ## Methodology
