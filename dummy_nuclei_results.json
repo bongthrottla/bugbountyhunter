@@ -1,0 +1,4 @@
+{"template-id":"CVE-2021-1234","info":{"name":"Sample Vulnerability","severity":"high"},"matched-at":"https://example.com/vuln"}
+{"template-id":"exposed-panel","info":{"name":"Admin Panel Exposed","severity":"medium"},"matched-at":"https://example.com/admin"}
+invalid json
+{"template-id":"info-leak","info":{"name":"Information Leak","severity":"info"},"matched-at":"https://example.com/info"}
