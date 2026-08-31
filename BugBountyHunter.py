@@ -906,13 +906,18 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
 
         # Store results in database
         cursor = self.conn.cursor()
+        live_hosts_set = set(live_hosts)
+        insert_data = []
         for subdomain in subdomains:
             if subdomain.strip():
-                is_alive = subdomain in live_hosts
-                cursor.execute("""
-                    INSERT INTO subdomains (scan_id, subdomain, is_alive)
-                    VALUES (?, ?, ?)
-                """, (scan_id, subdomain, is_alive))
+                is_alive = subdomain in live_hosts_set
+                insert_data.append((scan_id, subdomain, is_alive))
+
+        if insert_data:
+            cursor.executemany("""
+                INSERT INTO subdomains (scan_id, subdomain, is_alive)
+                VALUES (?, ?, ?)
+            """, insert_data)
 
         self.conn.commit()
 
