@@ -943,6 +943,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
 
         cursor = self.conn.cursor()
         vuln_count = 0
+        records = []
 
         with open(nuclei_output, 'r') as f:
             for line in f:
@@ -954,16 +955,26 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
                     description = result.get('info', {}).get('name', 'No description')
                     url = result.get('matched-at', '')
 
-                    cursor.execute("""
-                        INSERT INTO vulnerabilities 
-                        (scan_id, vuln_type, severity, description, url)
-                        VALUES (?, ?, ?, ?, ?)
-                    """, (scan_id, vuln_type, severity, description, url))
-
+                    records.append((scan_id, vuln_type, severity, description, url))
                     vuln_count += 1
+
+                    if len(records) >= 1000:
+                        cursor.executemany("""
+                            INSERT INTO vulnerabilities
+                            (scan_id, vuln_type, severity, description, url)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, records)
+                        records = []
 
                 except json.JSONDecodeError:
                     continue
+
+        if records:
+            cursor.executemany("""
+                INSERT INTO vulnerabilities
+                (scan_id, vuln_type, severity, description, url)
+                VALUES (?, ?, ?, ?, ?)
+            """, records)
 
         self.conn.commit()
         self.log(f"Found {vuln_count} potential vulnerabilities", "SUCCESS")
