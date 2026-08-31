@@ -69,3 +69,18 @@ def test_init_database(app_instance, tmp_path):
     assert "vulnerabilities" in tables
 
     conn.close()
+
+import subprocess
+from unittest.mock import patch
+
+def test_check_tool_availability_exceptions(app_instance):
+    exceptions = [
+        subprocess.TimeoutExpired(cmd="mock", timeout=10),
+        FileNotFoundError("Mocked file not found"),
+        subprocess.CalledProcessError(returncode=1, cmd="mock")
+    ]
+
+    for exc in exceptions:
+        with patch('subprocess.run', side_effect=exc):
+            tools = app_instance.check_tool_availability()
+            assert all(status is False for status in tools.values())
