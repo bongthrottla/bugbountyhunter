@@ -1,0 +1,360 @@
+From a2097dfb2c9febf01142d1d69bbe49f3a4a2aa41 Mon Sep 17 00:00:00 2001
+From: "google-labs-jules[bot]"
+ <161369871+google-labs-jules[bot]@users.noreply.github.com>
+Date: Mon, 31 Aug 2026 15:41:54 +0000
+Subject: [PATCH] chore: remove duplicate files and clean requirements.txt
+
+---
+ __pycache__/BugBountyHunter.cpython-312.pyc   | Bin 52852 -> 52989 bytes
+ ...gBountyHunter.cpython-312-pytest-9.0.2.pyc | Bin 0 -> 14961 bytes
+ chart_script (1).py                           | 106 ------------------
+ install (1).sh                                |  89 ---------------
+ requirements.txt                              |  11 --
+ 5 files changed, 206 deletions(-)
+ create mode 100644 __pycache__/test_BugBountyHunter.cpython-312-pytest-9.0.2.pyc
+ delete mode 100644 chart_script (1).py
+ delete mode 100644 install (1).sh
+
+diff --git a/__pycache__/BugBountyHunter.cpython-312.pyc b/__pycache__/BugBountyHunter.cpython-312.pyc
+index 32ba967fc1139b674a5ff6c4a7ae8006669365a8..956cb6cf8458ba9dcf0571eae5f9be5afeb26d6e 100644
+GIT binary patch
+delta 786
+zcmYLHO-vI(6rSm}Ww+fbEm$d~K%q))5NMlLjUFsw3xYH%Cm>NTjR6dBK;i+T!H}W{
+z0`DM_f`Bop91L`0{EL8+)I=iz8p|F$5ThPUG~3mrkw|o=Jvf)|%X{yenfKoJE5htd
+zGMaZfod%Ipd2c~;gSFcTy^cN^PlvUl$tEMrxxx(}`CTK8!;Rxyv@XdzQw#|TkJvbe
+zm!Qw!%7G>ssW}@wG@M}w3Ok0nTs#W3<ttjrfQsxgQgBTeG`4CbCBiYAC4etMYv(z3
+zE3c4dT`=G2Vkmy;jA*1?sJKc-4CjTRE*C>kc+mw4ybZx_Bi<H5-R&5EhLs*Sn<zO-
+z^<Mbh;~;vku)nuKMM`?EEUIx6R1XZQMaSV}K?t4?n3=VLkgz#m%*QGCF&g9&I=e)~
+z^%#zim6b$0l4bs={;6*%@GS7MVb-}(=1&v{!ojpEQ*(2ylPJom;sgenDhiVp-?VSO
+z_euXk|KqC@7dI@vgsC=siYiEr7Y?$bshkeS10nE`;do#Q%ociID)aIm*@lX1aaNGM
+zT3Cfq7W?2r#A`_C_DLv@vqbe`fk{RNodu>M4_Ja}hJ>MU($5mi)ChMbzcRQQuFcHk
+zC-fB(QtMi9)G3;aWTeu!V5pdFvr>{~XeOJNREYPamHz|x$7flxo4a#0`rGH}haA&b
+zw2&2Iodee9_8JJL$)p`=nxjoPgr9So9EAeI--Yq)gfQ2NVIpQ#X2@d9t)WCBW@^Pk
+zI@ZQ37zJ44MyT1X75bJqtd*)zse`)Bk7026fQ6Ej8u4b4H>?@m>%2Sc-#SuHIw4<&
+z*UOg~LIl^V?@GK1rSX%MiF_xO+rxDtpF7e#+`P$K*Lmx-?E_yS5yRRg7VRNkQ*s>`
+XhT`qY3<<tHD;#<gQxj`_dw=U69mV{&
+
+delta 713
+zcmW+!ZAepL6n@`br+4e#<>p-5b(_xJ<s3BAVINksiEWuqDGerC5?FyVN}{AdNcz!~
+zK=VY1Y&DHy%O9mL(Ff&6fd)Zr%&Bc*kx;)3KSGfTx_bUR&pGGeIp@In7odLoDd|U+
+zl_DWxJ;Txt+L$fS8|b^r?c0{r@V@ddjI6t&v!YKDDw|;nmnp=V2%#q>_%&Qt6p8Lt
+z0#O{NP^N*TWt64kE~qrV7q2Ri)(jk9KnY0Pyv~JBgV$R_Eo5*o=`Es=G7J8A{o+*_
+z(pzDmMX2blWTpi~>I9Zv*)A+0U3vgrIW;HUZpVqblAHwTxY&U4SD3$Kqh_)XfTq<#
+zp`3%n*;+2f3DR?QG!?s{y8Wi<vt?gQeJ*Sb^5ZG9_S&eucGm8R+C7oFQ<27|xczLu
+zGGrxd?J6an2e!9bJk6Rz4$y+0*Bipkv0P`kIV6AS7<0XHy)7Rs3^hk{oiV-3SG_Jq
+zvV3^l>!qeyBXE$L8|Gp<N0<vbp0&Pc8*Y1kt^Z7ji|QOPO{wqLrksa**hM8ZM(BZJ
+z8{+t-bR=QBC7qI4S{<d;ahls$IfRTZyk#C`&3{*Tq%Yk{`3P$qxqFAk#n9{DLr=4&
+zkUXi@K*IlsMjCFNLb9E3E8t8OFv6NhJn)0UYIrj+Ku^o_LWRjJEwm2StB_VFXcgv&
+zJa0*inBt%EJb^x39Hg-aem&WpcDpf%lR7gL4DDc$K7Z3#*WK9JNIXN*G|@VOrjfp_
+zo5jQ+^mwokn=o{9KXRVbGom#N_a{{(F{Z@gRV&J|z{YsKO2Fk*#AMAeiipY<Wo$m@
+z!v3Rhc;W(uO3KO8iNzHB4g!-$3^U3?U)da!-d)vMHOm;Hj3LO!nY<<8vx-(}l*xf?
+aszFFN_-4w2(GPpc_|!-$PQc|)UH<`9tNTd+
+
+diff --git a/__pycache__/test_BugBountyHunter.cpython-312-pytest-9.0.2.pyc b/__pycache__/test_BugBountyHunter.cpython-312-pytest-9.0.2.pyc
+new file mode 100644
+index 0000000000000000000000000000000000000000..2067a4b9ee43f35d47a605b332d4859f32a510ae
+GIT binary patch
+literal 14961
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/chart_script (1).py b/chart_script (1).py
+deleted file mode 100644
+index ff1d63a..0000000
+--- a/chart_script (1).py
++++ /dev/null
+@@ -1,106 +0,0 @@
+-import plotly.graph_objects as go
+-import plotly.express as px
+-import json
+-
+-# Complete timeline data with interpolated missing months
+-timeline_data = [
+-    {"month": 1, "phase": "Learning Foundation", "earnings_min": 0, "earnings_max": 50, "skills": "Setup & Basics", "key_activity": "Tool Install"},
+-    {"month": 2, "phase": "Learning Foundation", "earnings_min": 0, "earnings_max": 100, "skills": "Manual Testing", "key_activity": "First Recon"},
+-    {"month": 3, "phase": "Learning Foundation", "earnings_min": 50, "earnings_max": 200, "skills": "Vuln Finding", "key_activity": "First Bug Sub"},
+-    {"month": 4, "phase": "Building Reputation", "earnings_min": 200, "earnings_max": 500, "skills": "Efficient Hunt", "key_activity": "Consistent Sub"},
+-    {"month": 5, "phase": "Building Reputation", "earnings_min": 300, "earnings_max": 800, "skills": "Advanced Meth", "key_activity": "Private Apps"},
+-    {"month": 6, "phase": "Building Reputation", "earnings_min": 500, "earnings_max": 1200, "skills": "Specialization", "key_activity": "Custom Tools"},
+-    {"month": 7, "phase": "Building Reputation", "earnings_min": 600, "earnings_max": 1400, "skills": "Advanced Hunt", "key_activity": "Complex Bugs"},
+-    {"month": 8, "phase": "Building Reputation", "earnings_min": 700, "earnings_max": 1600, "skills": "Expertise", "key_activity": "Research"},
+-    {"month": 9, "phase": "Scaling Up", "earnings_min": 1000, "earnings_max": 3000, "skills": "Expert Level", "key_activity": "Private Progs"},
+-    {"month": 10, "phase": "Scaling Up", "earnings_min": 1200, "earnings_max": 3500, "skills": "Advanced Exp", "key_activity": "Complex Hunt"},
+-    {"month": 11, "phase": "Scaling Up", "earnings_min": 1500, "earnings_max": 4000, "skills": "Thought Lead", "key_activity": "Conferences"},
+-    {"month": 12, "phase": "Scaling Up", "earnings_min": 2000, "earnings_max": 5000, "skills": "Community Lead", "key_activity": "Teaching"}
+-]
+-
+-# Calculate midpoints and error bars
+-months = [item["month"] for item in timeline_data]
+-earnings_mid = [(item["earnings_min"] + item["earnings_max"]) / 2 for item in timeline_data]
+-earnings_min = [item["earnings_min"] for item in timeline_data]
+-earnings_max = [item["earnings_max"] for item in timeline_data]
+-skills = [item["skills"] for item in timeline_data]
+-activities = [item["key_activity"] for item in timeline_data]
+-phases = [item["phase"] for item in timeline_data]
+-
+-# Create the figure
+-fig = go.Figure()
+-
+-# Add earnings progression with error bars showing ranges
+-fig.add_trace(go.Scatter(
+-    x=months,
+-    y=earnings_mid,
+-    mode='markers+lines',
+-    name='Earnings Range',
+-    marker=dict(size=10, color='#1FB8CD'),
+-    line=dict(width=3, color='#1FB8CD'),
+-    error_y=dict(
+-        type='data',
+-        symmetric=False,
+-        array=[max_val - mid_val for max_val, mid_val in zip(earnings_max, earnings_mid)],
+-        arrayminus=[mid_val - min_val for mid_val, min_val in zip(earnings_mid, earnings_min)],
+-        visible=True,
+-        color='#1FB8CD',
+-        thickness=2
+-    ),
+-    hovertemplate='<b>Month %{x}</b><br>' +
+-                 'Earnings: $%{customdata[0]}-$%{customdata[1]}<br>' +
+-                 'Phase: %{customdata[2]}<br>' +
+-                 'Skills: %{customdata[3]}<br>' +
+-                 'Focus: %{customdata[4]}<extra></extra>',
+-    customdata=list(zip(earnings_min, earnings_max, phases, skills, activities))
+-))
+-
+-# Add phase background colors
+-phase_colors = {"Learning Foundation": "#B3E5EC", "Building Reputation": "#FFCDD2", "Scaling Up": "#A5D6A7"}
+-current_phase = None
+-phase_start = 1
+-
+-for i, phase in enumerate(phases + [None]):  # Add None to trigger final phase
+-    if phase != current_phase:
+-        if current_phase is not None:
+-            # Add background rectangle for previous phase
+-            fig.add_shape(
+-                type="rect",
+-                x0=phase_start - 0.5,
+-                x1=months[i-1] + 0.5,
+-                y0=0,
+-                y1=max(earnings_max) * 1.1,
+-                fillcolor=phase_colors.get(current_phase, "#F0F0F0"),
+-                opacity=0.2,
+-                layer="below",
+-                line_width=0
+-            )
+-        current_phase = phase
+-        phase_start = months[i] if i < len(months) else months[-1]
+-
+-# Update layout
+-fig.update_layout(
+-    title="Bug Bounty Earnings: 12-Month Journey",
+-    xaxis_title="Month",
+-    yaxis_title="Earnings ($)",
+-    showlegend=False
+-)
+-
+-# Update axes
+-fig.update_xaxes(
+-    tickvals=list(range(1, 13)),
+-    ticktext=[f"M{i}" for i in range(1, 13)],
+-    range=[0.5, 12.5]
+-)
+-fig.update_yaxes(
+-    tickformat='$,.0f',
+-    range=[0, max(earnings_max) * 1.1]
+-)
+-
+-# Update traces for better visibility
+-fig.update_traces(cliponaxis=False)
+-
+-# Save the chart
+-fig.write_image("bug_bounty_roadmap.png")
+-fig.write_image("bug_bounty_roadmap.svg", format="svg")
+-print("Chart saved as bug_bounty_roadmap.png and bug_bounty_roadmap.svg")
+\ No newline at end of file
+diff --git a/install (1).sh b/install (1).sh
+deleted file mode 100644
+index a2f8d55..0000000
+--- a/install (1).sh
++++ /dev/null
+@@ -1,89 +0,0 @@
+-#!/bin/bash
+-# BugBountyHunter Pro - Quick Installation Script
+-# For Linux and macOS systems
+-
+-echo "🚀 BugBountyHunter Pro - Installation Script"
+-echo "=========================================="
+-
+-# Check if Python is installed
+-if ! command -v python3 &> /dev/null; then
+-    echo "❌ Python 3 is required but not installed."
+-    echo "Please install Python 3.7+ and try again."
+-    exit 1
+-fi
+-
+-echo "✅ Python 3 found: $(python3 --version)"
+-
+-# Check if Go is installed
+-if ! command -v go &> /dev/null; then
+-    echo "❌ Go language is required but not installed."
+-    echo "Please install Go from https://golang.org/dl/ and try again."
+-    exit 1
+-fi
+-
+-echo "✅ Go found: $(go version)"
+-
+-# Create necessary directories
+-echo "📁 Creating directories..."
+-mkdir -p scans reports wordlists configs outputs
+-
+-# Install essential reconnaissance tools
+-echo "🛠️ Installing essential tools..."
+-
+-echo "Installing subfinder..."
+-go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+-
+-echo "Installing httpx..."
+-go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+-
+-echo "Installing nuclei..."
+-go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+-
+-echo "Installing ffuf..."
+-go install github.com/ffuf/ffuf@latest
+-
+-echo "Installing dalfox..."
+-go install github.com/hahwul/dalfox/v2@latest
+-
+-echo "Installing gau..."
+-go install github.com/lc/gau@latest
+-
+-echo "Installing assetfinder..."
+-go install github.com/tomnomnom/assetfinder@latest
+-
+-# Update nuclei templates
+-echo "📝 Updating nuclei templates..."
+-nuclei -update-templates
+-
+-# Verify installations
+-echo "🔍 Verifying installations..."
+-tools=("subfinder" "httpx" "nuclei" "ffuf")
+-all_installed=true
+-
+-for tool in "${tools[@]}"; do
+-    if command -v $tool &> /dev/null; then
+-        echo "✅ $tool: installed"
+-    else
+-        echo "❌ $tool: not found in PATH"
+-        all_installed=false
+-    fi
+-done
+-
+-if [ "$all_installed" = true ]; then
+-    echo ""
+-    echo "🎉 Installation completed successfully!"
+-    echo ""
+-    echo "📋 Next steps:"
+-    echo "1. Run: python3 BugBountyHunter.py"
+-    echo "2. Check tool status in the Tools tab"
+-    echo "3. Start with a basic reconnaissance scan"
+-    echo ""
+-    echo "🎯 Happy hunting!"
+-else
+-    echo ""
+-    echo "⚠️  Some tools failed to install."
+-    echo "Please ensure ~/go/bin is in your PATH:"
+-    echo "export PATH=\$PATH:~/go/bin"
+-    echo ""
+-    echo "Add this line to your ~/.bashrc or ~/.zshrc for persistence."
+-fi
+diff --git a/requirements.txt b/requirements.txt
+index f79ca26..8153ae7 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,15 +1,4 @@
+ # BugBountyHunter Pro - Python Dependencies
+-# Core Python libraries (usually included with Python)
+-tkinter  # GUI framework (usually built-in)
+-sqlite3  # Database (usually built-in)
+-threading  # Multithreading (usually built-in)
+-subprocess  # Process management (usually built-in)
+-json  # JSON handling (usually built-in)
+-datetime  # Date/time utilities (usually built-in)
+-pathlib  # Path handling (usually built-in)
+-re  # Regular expressions (usually built-in)
+-os  # Operating system interface (usually built-in)
+-sys  # System-specific parameters (usually built-in)
+
+ # Additional packages (install if needed)
+ # pip install requests  # For HTTP requests (optional)
+--
+2.53.0
