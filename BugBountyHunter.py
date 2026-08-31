@@ -809,7 +809,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
         # Basic domain validation
         import re
         pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$'
-        return re.match(pattern, target) is not None
+        return re.fullmatch(pattern, target) is not None
 
     def get_required_tools(self, scan_type):
         """Get required tools for specific scan type"""
