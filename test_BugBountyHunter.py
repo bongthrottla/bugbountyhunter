@@ -69,3 +69,33 @@ def test_init_database(app_instance, tmp_path):
     assert "vulnerabilities" in tables
 
     conn.close()
+
+def test_parse_nuclei_results(app_instance, tmp_path):
+    # Setup test file
+    nuclei_output = tmp_path / "nuclei_results.json"
+
+    with open(nuclei_output, "w") as f:
+        # Valid JSON
+        f.write('{"template-id": "xss-vuln", "info": {"severity": "high", "name": "Reflected XSS"}, "matched-at": "http://example.com/xss"}\n')
+        # Invalid JSON (should trigger JSONDecodeError and be caught)
+        f.write('This is not a json string\n')
+        f.write('{"missing_bracket": true\n')
+        # Another Valid JSON
+        f.write('{"template-id": "sqli-vuln", "info": {"severity": "critical", "name": "SQL Injection"}, "matched-at": "http://example.com/sqli"}\n')
+
+    # Setup database
+    cursor = app_instance.conn.cursor()
+    cursor.execute("INSERT INTO scans (target, scan_type, status) VALUES (?, ?, ?)", ("example.com", "comprehensive", "completed"))
+    scan_id = cursor.lastrowid
+    app_instance.conn.commit()
+
+    # Call the method
+    app_instance.parse_nuclei_results(str(nuclei_output), scan_id)
+
+    # Verify the results in DB
+    cursor.execute("SELECT vuln_type, severity, description, url FROM vulnerabilities WHERE scan_id = ?", (scan_id,))
+    results = cursor.fetchall()
+
+    assert len(results) == 2
+    assert results[0] == ("xss-vuln", "high", "Reflected XSS", "http://example.com/xss")
+    assert results[1] == ("sqli-vuln", "critical", "SQL Injection", "http://example.com/sqli")
