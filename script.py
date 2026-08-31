@@ -816,6 +816,8 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
 
     def run_scan(self, target, scan_type):
         """Run the actual scanning process"""
+        cursor = None
+        scan_id = None
         try:
             # Create scan entry in database
             cursor = self.conn.cursor()
@@ -854,8 +856,9 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
         except Exception as e:
             self.log(f"Scan failed: {str(e)}", "ERROR")
             # Update scan status to failed
-            cursor.execute("UPDATE scans SET status = 'failed' WHERE id = ?", (scan_id,))
-            self.conn.commit()
+            if cursor is not None and scan_id is not None:
+                cursor.execute("UPDATE scans SET status = \'failed\' WHERE id = ?", (scan_id,))
+                self.conn.commit()
         
         finally:
             # Stop progress bar

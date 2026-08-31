@@ -69,3 +69,47 @@ def test_init_database(app_instance, tmp_path):
     assert "vulnerabilities" in tables
 
     conn.close()
+
+from unittest.mock import MagicMock, patch
+
+def test_run_scan_os_exception(app_instance):
+    # This exception will occur in os.makedirs since cursor.execute completes
+    mock_cursor = MagicMock()
+    mock_cursor.lastrowid = 123
+
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    app_instance.conn = mock_conn
+    app_instance.log = MagicMock()
+
+    with patch('os.makedirs', side_effect=OSError("Disk full")):
+        app_instance.run_scan("example.com", "basic")
+
+        app_instance.log.assert_called_with("Scan failed: Disk full", "ERROR")
+        mock_cursor.execute.assert_any_call("UPDATE scans SET status = 'failed' WHERE id = ?", (123,))
+
+def test_run_scan_db_exception(app_instance):
+    # Create a mock cursor
+    mock_cursor = MagicMock()
+    mock_cursor.execute.side_effect = sqlite3.OperationalError("Database is locked")
+
+    # Mock the conn property rather than the instance method directly
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    # Replace app_instance's conn with the mock
+    app_instance.conn = mock_conn
+
+    # Mock the log method to verify it's called
+    app_instance.log = MagicMock()
+
+    # Run the scan
+    app_instance.run_scan("example.com", "basic")
+
+    # Verify that the log method was called with the error
+    app_instance.log.assert_called_with("Scan failed: Database is locked", "ERROR")
+
+    # Because it fails before scan_id is assigned (or even cursor in some cases depending on where the error throws),
+    # the failure recovery doesn't attempt to use the undefined scan_id
+    # We verify it doesn't crash here with an UnboundLocalError by just ensuring the method finishes without error
