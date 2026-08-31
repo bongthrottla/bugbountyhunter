@@ -16,16 +16,13 @@ License: MIT
 """
 
 import os
-import sys
 import subprocess
 import threading
-import time
 import datetime
 import json
 import tkinter as tk
-from tkinter import scrolledtext, messagebox, simpledialog, ttk, filedialog
+from tkinter import scrolledtext, messagebox, ttk
 import sqlite3
-from pathlib import Path
 
 class BugBountyHunter:
     def __init__(self, root):
