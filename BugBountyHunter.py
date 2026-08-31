@@ -899,7 +899,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
 
         # Count live hosts
         with open(live_output, 'r') as f:
-            live_hosts = f.read().strip().split('\n')
+            live_hosts = set(f.read().strip().split('\n'))
             live_count = len([h for h in live_hosts if h.strip()])
 
         self.log(f"Found {live_count} live hosts", "SUCCESS")
