@@ -155,7 +155,13 @@ class BugBountyHunter:
 
     def create_main_tab(self):
         """Create the main scanning interface"""
-        # Target input section
+        self._create_target_section()
+        self._create_scan_type_section()
+        self._create_control_buttons()
+        self._create_progress_section()
+        self._create_output_area()
+
+    def _create_target_section(self):
         target_frame = ttk.LabelFrame(self.main_tab, text="Target Configuration", padding="10")
         target_frame.pack(fill='x', padx=10, pady=5)
 
@@ -163,7 +169,7 @@ class BugBountyHunter:
         self.target_entry = tk.Entry(target_frame, width=50, font=('Arial', 12))
         self.target_entry.pack(fill='x', pady=2)
 
-        # Scan type selection
+    def _create_scan_type_section(self):
         scan_frame = ttk.LabelFrame(self.main_tab, text="Scan Configuration", padding="10")
         scan_frame.pack(fill='x', padx=10, pady=5)
 
@@ -182,7 +188,7 @@ class BugBountyHunter:
             tk.Radiobutton(scan_frame, text=text, variable=self.scan_type, 
                           value=value, font=('Arial', 10)).pack(anchor='w')
 
-        # Control buttons
+    def _create_control_buttons(self):
         button_frame = ttk.Frame(self.main_tab)
         button_frame.pack(fill='x', padx=10, pady=10)
 
@@ -198,7 +204,7 @@ class BugBountyHunter:
                  bg='#2196F3', fg='white', font=('Arial', 12, 'bold'),
                  height=2).pack(side='left', padx=5, fill='x', expand=True)
 
-        # Progress and status
+    def _create_progress_section(self):
         self.progress = ttk.Progressbar(self.main_tab, mode='indeterminate')
         self.progress.pack(fill='x', padx=10, pady=5)
 
@@ -206,7 +212,7 @@ class BugBountyHunter:
                                    font=('Arial', 11), fg='green')
         self.status_label.pack(pady=2)
 
-        # Output area
+    def _create_output_area(self):
         output_frame = ttk.LabelFrame(self.main_tab, text="Scan Output", padding="10")
         output_frame.pack(fill='both', expand=True, padx=10, pady=5)
 
