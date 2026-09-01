@@ -187,15 +187,15 @@ class BugBountyHunter:
         button_frame.pack(fill='x', padx=10, pady=10)
 
         tk.Button(button_frame, text="🚀 Start Scan", command=self.start_scan,
-                 bg='#4CAF50', fg='white', font=('Arial', 12, 'bold'),
+                 bg='#4CAF50', fg='white', font=('Arial', 12, 'bold'), cursor='hand2',
                  height=2).pack(side='left', padx=5, fill='x', expand=True)
 
         tk.Button(button_frame, text="⏹️ Stop Scan", command=self.stop_scan,
-                 bg='#f44336', fg='white', font=('Arial', 12, 'bold'),
+                 bg='#f44336', fg='white', font=('Arial', 12, 'bold'), cursor='hand2',
                  height=2).pack(side='left', padx=5, fill='x', expand=True)
 
         tk.Button(button_frame, text="📊 Generate Report", command=self.generate_comprehensive_report,
-                 bg='#2196F3', fg='white', font=('Arial', 12, 'bold'),
+                 bg='#2196F3', fg='white', font=('Arial', 12, 'bold'), cursor='hand2',
                  height=2).pack(side='left', padx=5, fill='x', expand=True)
 
         # Progress and status
@@ -666,7 +666,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
         # Refresh button
         tk.Button(self.tools_tab, text="🔄 Refresh Tool Status", 
                  command=self.refresh_tools, bg='#4CAF50', fg='white',
-                 font=('Arial', 12)).pack(pady=10)
+                 font=('Arial', 12), cursor='hand2').pack(pady=10)
 
     def create_reports_tab(self):
         """Create the reports management tab"""
@@ -701,7 +701,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
 
         for text, command in template_buttons:
             tk.Button(report_frame, text=text, command=command,
-                     bg='#2196F3', fg='white', font=('Arial', 11),
+                     bg='#2196F3', fg='white', font=('Arial', 11), cursor='hand2',
                      height=2).pack(fill='x', pady=2)
 
     def update_tool_status(self):
