@@ -150,6 +150,10 @@ class BugBountyHunter:
         self.target_entry = tk.Entry(target_frame, width=50, font=('Arial', 12))
         self.target_entry.pack(fill='x', pady=2)
         
+        # UX: Auto-focus the input field and allow Enter to submit
+        self.target_entry.focus_set()
+        self.target_entry.bind('<Return>', lambda event: self.start_scan())
+
         # Scan type selection
         scan_frame = ttk.LabelFrame(self.main_tab, text="Scan Configuration", padding="10")
         scan_frame.pack(fill='x', padx=10, pady=5)
@@ -167,7 +171,7 @@ class BugBountyHunter:
         
         for text, value in scan_options:
             tk.Radiobutton(scan_frame, text=text, variable=self.scan_type, 
-                          value=value, font=('Arial', 10)).pack(anchor='w')
+                          value=value, font=('Arial', 10), cursor='hand2').pack(anchor='w')
         
         # Control buttons
         button_frame = ttk.Frame(self.main_tab)
