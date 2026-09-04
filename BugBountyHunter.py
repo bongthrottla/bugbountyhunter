@@ -55,6 +55,8 @@ class BugBountyHunter:
         directories = ['outputs', 'scans', 'reports', 'wordlists', 'configs']
         for directory in directories:
             os.makedirs(directory, exist_ok=True)
+            # Security enhancement: Restrict permissions to owner only
+            os.chmod(directory, 0o700)
 
     def init_database(self):
         """Initialize SQLite database for storing scan results"""
@@ -838,6 +840,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
             # Create output directory for this scan
             scan_dir = f"scans/scan_{scan_id}_{target}"
             os.makedirs(scan_dir, exist_ok=True)
+            os.chmod(scan_dir, 0o700)
 
             # Run scan based on type
             if scan_type == 'basic':
