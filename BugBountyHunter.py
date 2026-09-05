@@ -55,10 +55,12 @@ class BugBountyHunter:
         directories = ['outputs', 'scans', 'reports', 'wordlists', 'configs']
         for directory in directories:
             os.makedirs(directory, exist_ok=True)
+            # Ensure proper file permissions to prevent local information disclosure
+            os.chmod(directory, 0o700)
 
     def init_database(self):
         """Initialize SQLite database for storing scan results"""
-        self.conn = sqlite3.connect('scans/bugbounty.db')
+        self.conn = sqlite3.connect('scans/bugbounty.db', check_same_thread=False)
         cursor = self.conn.cursor()
 
         # Create tables for different data types
@@ -838,6 +840,8 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
             # Create output directory for this scan
             scan_dir = f"scans/scan_{scan_id}_{target}"
             os.makedirs(scan_dir, exist_ok=True)
+            # Ensure proper file permissions to prevent local information disclosure
+            os.chmod(scan_dir, 0o700)
 
             # Run scan based on type
             if scan_type == 'basic':
