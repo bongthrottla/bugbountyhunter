@@ -150,6 +150,10 @@ class BugBountyHunter:
         self.target_entry = tk.Entry(target_frame, width=50, font=('Arial', 12))
         self.target_entry.pack(fill='x', pady=2)
         
+        # Accessibility and UX enhancements
+        self.target_entry.bind('<Return>', self.start_scan)
+        self.target_entry.focus_set()
+
         # Scan type selection
         scan_frame = ttk.LabelFrame(self.main_tab, text="Scan Configuration", padding="10")
         scan_frame.pack(fill='x', padx=10, pady=5)
@@ -760,7 +764,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
         if level in ["SUCCESS", "ERROR"]:
             self.status_label.config(text=message, fg=color_map.get(level, "black"))
 
-    def start_scan(self):
+    def start_scan(self, event=None):
         """Start the selected scan type"""
         target = self.target_entry.get().strip()
         if not target:
