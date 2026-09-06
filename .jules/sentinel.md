@@ -1,0 +1,4 @@
+## 2024-05-24 - [Local Information Disclosure & Thread Safety]
+**Vulnerability:** Scans and outputs directories were created with default permissions which could allow local users to read sensitive scan output. Additionally, the SQLite database connection was missing `check_same_thread=False`, which can lead to crashes when accessed from background scan threads.
+**Learning:** In desktop applications where scans run as background threads, SQLite connections need `check_same_thread=False` to prevent `sqlite3.ProgrammingError`. Output directories containing sensitive security scan data must have restricted permissions (0o700) to prevent local information disclosure.
+**Prevention:** Always apply `os.chmod(dir, 0o700)` when creating directories that store sensitive information, and instantiate SQLite connections with `check_same_thread=False` when using multithreading.
