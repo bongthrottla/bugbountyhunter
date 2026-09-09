@@ -167,8 +167,12 @@ class BugBountyHunter:
         
         for text, value in scan_options:
             tk.Radiobutton(scan_frame, text=text, variable=self.scan_type, 
-                          value=value, font=('Arial', 10)).pack(anchor='w')
+                          value=value, font=('Arial', 10), cursor='hand2').pack(anchor='w')
         
+        # Set focus to target entry and allow enter key to trigger scan
+        self.target_entry.focus_set()
+        self.target_entry.bind('<Return>', self.start_scan)
+
         # Control buttons
         button_frame = ttk.Frame(self.main_tab)
         button_frame.pack(fill='x', padx=10, pady=10)
@@ -760,7 +764,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
         if level in ["SUCCESS", "ERROR"]:
             self.status_label.config(text=message, fg=color_map.get(level, "black"))
 
-    def start_scan(self):
+    def start_scan(self, event=None):
         """Start the selected scan type"""
         target = self.target_entry.get().strip()
         if not target:
