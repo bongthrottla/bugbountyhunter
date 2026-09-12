@@ -55,10 +55,16 @@ class BugBountyHunter:
         directories = ['outputs', 'scans', 'reports', 'wordlists', 'configs']
         for directory in directories:
             os.makedirs(directory, exist_ok=True)
+            # Secure directory permissions (owner rwx only)
+            os.chmod(directory, 0o700)
 
     def init_database(self):
         """Initialize SQLite database for storing scan results"""
-        self.conn = sqlite3.connect('scans/bugbounty.db')
+        db_path = 'scans/bugbounty.db'
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        # Secure database file permissions (owner rw only)
+        if os.path.exists(db_path):
+            os.chmod(db_path, 0o600)
         cursor = self.conn.cursor()
 
         # Create tables for different data types
@@ -838,6 +844,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
             # Create output directory for this scan
             scan_dir = f"scans/scan_{scan_id}_{target}"
             os.makedirs(scan_dir, exist_ok=True)
+            os.chmod(scan_dir, 0o700)
 
             # Run scan based on type
             if scan_type == 'basic':
@@ -1025,6 +1032,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
     def create_basic_wordlist(self, path):
         """Create a basic directory wordlist"""
         os.makedirs(os.path.dirname(path), exist_ok=True)
+        os.chmod(os.path.dirname(path), 0o700)
 
         common_dirs = [
             'admin', 'administrator', 'login', 'wp-admin', 'backup',
@@ -1036,6 +1044,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
         with open(path, 'w') as f:
             for directory in common_dirs:
                 f.write(f"{directory}\n")
+        os.chmod(path, 0o600)
 
     def stop_scan(self):
         """Stop the current scan"""
@@ -1069,6 +1078,7 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
 
         with open(report_path, 'w') as f:
             f.write(self.generate_markdown_report(scan_id, target, scan_type, timestamp))
+        os.chmod(report_path, 0o600)
 
         self.log(f"Comprehensive report generated: {report_path}", "SUCCESS")
         messagebox.showinfo("Report Generated", f"Report saved to:\n{report_path}")

@@ -1,0 +1,4 @@
+## 2024-05-18 - [Security Enhancement] Enforce strict permissions on sensitive output files
+**Vulnerability:** The application creates local directories (`outputs`, `scans`, etc.) and files (database, wordlists, reports) without explicitly setting file permissions, defaulting to system `umask`. Since this is a bug bounty tool dealing with sensitive reconnaissance and vulnerability data, relying on `umask` could lead to local information disclosure if run on shared systems.
+**Learning:** In applications producing sensitive local output, explicitly set `0o700` for directories and `0o600` for files instead of relying on default `os.makedirs` or `open().write()`.
+**Prevention:** Always follow up file creation operations containing sensitive application data with `os.chmod` to restrict access strictly to the owner.
