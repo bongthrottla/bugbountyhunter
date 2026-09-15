@@ -54,7 +54,8 @@ class BugBountyHunter:
         """Create necessary directories for output and data storage"""
         directories = ['outputs', 'scans', 'reports', 'wordlists', 'configs']
         for directory in directories:
-            os.makedirs(directory, exist_ok=True)
+            os.makedirs(directory, mode=0o700, exist_ok=True)
+            os.chmod(directory, 0o700)
 
     def init_database(self):
         """Initialize SQLite database for storing scan results"""
@@ -837,7 +838,8 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
 
             # Create output directory for this scan
             scan_dir = f"scans/scan_{scan_id}_{target}"
-            os.makedirs(scan_dir, exist_ok=True)
+            os.makedirs(scan_dir, mode=0o700, exist_ok=True)
+            os.chmod(scan_dir, 0o700)
 
             # Run scan based on type
             if scan_type == 'basic':
@@ -1024,7 +1026,8 @@ For detailed guides, visit: https://docs.projectdiscovery.io/
 
     def create_basic_wordlist(self, path):
         """Create a basic directory wordlist"""
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+        os.chmod(os.path.dirname(path), 0o700)
 
         common_dirs = [
             'admin', 'administrator', 'login', 'wp-admin', 'backup',
