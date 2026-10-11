@@ -20,6 +20,12 @@ import datetime
 import json
 import os
 import re
+
+# Make ProjectDiscovery / Go toolchain binaries discoverable when launched from a
+# desktop environment that does not inherit the user's interactive PATH.
+_gobin = os.path.expanduser("~/go/bin")
+if os.path.isdir(_gobin):
+    os.environ["PATH"] = _gobin + os.pathsep + os.environ.get("PATH", "")
 import shutil
 import sqlite3
 import subprocess
