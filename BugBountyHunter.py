@@ -984,14 +984,21 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         subdomain_file = f"{scan_dir}/subdomains.txt"
         live_file = f"{scan_dir}/live_subdomains.txt"
 
-        self._run_command(["subfinder", "-d", target, "-silent", "-o", subdomain_file])
-        self._run_command(["httpx", "-l", subdomain_file, "-o", live_file, "-silent"])
+        r = self._run_command([self._tool_exe("subfinder"), "-d", target, "-silent", "-o", subdomain_file])
+        if not r.get("ok"):
+            raise RuntimeError(f"subfinder failed (exit {r.get('returncode')}): {r.get('stderr','').strip()[:200] or 'no output'}")
+
+        r = self._run_command([self._tool_exe("httpx"), "-l", subdomain_file, "-o", live_file, "-silent"])
+        if not r.get("ok"):
+            raise RuntimeError(f"httpx failed (exit {r.get('returncode')}): {r.get('stderr','').strip()[:200] or 'no output'}")
 
         for url in self._read_lines(live_file):
             if self.stop_requested:
                 return
             self.log(f"Scanning {url} for XSS...", "INFO")
-            self._run_command([self._tool_exe("dalfox"), "url", url, "-silence"])
+            r = self._run_command([self._tool_exe("dalfox"), "url", url, "-silence"])
+            if not r.get("ok"):
+                self.log(f"dalfox failed on {url}: exit {r.get('returncode')}", "WARNING")
 
     def run_sqli_scan(self, target, scan_dir, scan_id):
         """Explain the SQLi workflow; parameter selection is inherently manual."""
@@ -1011,7 +1018,7 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             self.create_basic_wordlist(str(wordlist_path))
 
         dirfuzz_output = f"{scan_dir}/directories.json"
-        self._run_command([
+        r = self._run_command([
             self._tool_exe("ffuf"), "-u", f"https://{target}/FUZZ",
             "-w", str(wordlist_path),
             "-o", dirfuzz_output,
@@ -1019,6 +1026,8 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             "-mc", FUZZ_STATUS,
             "-s",
         ])
+        if not r.get("ok") and not os.path.exists(dirfuzz_output):
+            raise RuntimeError(f"ffuf failed (exit {r.get('returncode')}): {r.get('stderr','').strip()[:200] or 'no output'}")
 
         count = 0
         if os.path.exists(dirfuzz_output):
