@@ -863,7 +863,7 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         path = self.tool_paths.get(tool) or shutil.which(tool)
         if path is None:
             return False
-        for flag in ("--version", "-version", "-V"):
+        for flag in ("--version", "-version", "version", "-V"):
             try:
                 r = subprocess.run(
                     [path, flag],
@@ -930,7 +930,7 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         if os.path.exists(live_hosts_file):
             r = self._run_command([
                 self._tool_exe("nuclei"), "-l", live_hosts_file, "-o", nuclei_output,
-                "-json", "-silent",
+                "-jsonl", "-silent",
             ])
             # nuclei exits 1 when it finds nothing in some versions; only treat
             # a missing results file plus a non-zero exit as a real failure.
