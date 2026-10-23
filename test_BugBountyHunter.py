@@ -72,6 +72,44 @@ def test_init_database(app_instance, tmp_path):
     conn.close()
 
 
+def test_tool_usable_rejects_missing(app_instance):
+    """A tool that is not on PATH must be reported unusable."""
+    assert app_instance._tool_usable("definitely-not-a-real-tool-xyz") is False
+
+
+def test_tool_usable_accepts_flagless_tool(app_instance, tmp_path, monkeypatch):
+    """Regression: assetfinder has no version flag and exits non-zero on every
+    probe, so it was reported missing even when installed and working.
+
+    A tool that rejects unknown flags but prints usage must count as usable.
+    """
+    import os
+    import stat
+
+    fake = tmp_path / "flagless-tool"
+    fake.write_text(
+        "#!/bin/sh\n"
+        'case "$1" in\n'
+        "  -h|--help) echo 'Usage: flagless-tool [-subs-only]'; exit 0 ;;\n"
+        '  *) echo "flag provided but not defined: $1" >&2; exit 2 ;;\n'
+        "esac\n"
+    )
+    fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+
+    monkeypatch.setattr(
+        "BugBountyHunter.shutil.which", lambda name: str(fake) if name == "flagless-tool" else None
+    )
+    app_instance.tool_paths.pop("flagless-tool", None)
+    assert app_instance._tool_usable("flagless-tool") is True
+
+
+def test_check_tool_availability_matches_tool_usable(app_instance):
+    """The startup check and the pre-scan check must never disagree."""
+    fresh = app_instance.check_tool_availability()
+    for tool, reported in fresh.items():
+        assert reported == app_instance._tool_usable(tool), tool
+
+
 def test_hostname_of(app_instance):
     """URLs and bare hostnames must normalise to the same bare hostname."""
     h = app_instance._hostname_of

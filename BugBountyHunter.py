@@ -186,36 +186,13 @@ class BugBountyHunter:
         self.conn.commit()
 
     def check_tool_availability(self):
-        """Check which reconnaissance tools are installed on the system.
+        """Check which reconnaissance tools are installed and usable.
 
-        Tools expose their version through different flags, so each probe is
-        tried in turn; if none succeeds the binary presence on PATH is used.
+        Delegates to _tool_usable so the startup check and the pre-scan check
+        can never disagree about whether a tool works.
         """
-        tools = {tool: False for tool in TOOLS}
-        probes = ("--version", "-version", "version", "-V")
         self.tool_paths = {}
-        for tool in tools:
-            path = shutil.which(tool)
-            if path is None:
-                tools[tool] = False
-                continue
-            for flag in probes:
-                try:
-                    result = subprocess.run(
-                        [path, flag],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                        timeout=8,
-                    )
-                except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.CalledProcessError, OSError):
-                    continue
-                if result.returncode == 0:
-                    tools[tool] = True
-                    self.tool_paths[tool] = path
-                    break
-            else:
-                tools[tool] = False
-        return tools
+        return {tool: self._tool_usable(tool) for tool in TOOLS}
 
     def _tool_exe(self, name):
         """Resolve a tool name to its pinned absolute path (falls back to name)."""
@@ -955,21 +932,44 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         return missing
 
     def _tool_usable(self, tool):
-        """True only if the tool is on PATH AND actually executes."""
+        """True only if the tool is on PATH AND actually executes.
+
+        Most tools answer a version probe, but some (assetfinder) have no
+        version flag at all and exit non-zero on every probe. Falling back to
+        the tool's own help flag distinguishes "installed but flagless" from
+        "not installed" — without it, a perfectly good binary is reported
+        missing and the user is told to install something they already have.
+        """
         path = self.tool_paths.get(tool) or shutil.which(tool)
         if path is None:
             return False
-        for flag in ("--version", "-version", "version", "-V"):
+
+        # A probe "succeeds" if the process runs and does not report an
+        # unknown-flag error. Some tools print help to stderr and exit 2.
+        unknown_flag_markers = (
+            "flag provided but not defined",
+            "unknown flag",
+            "unrecognized option",
+            "invalid option",
+        )
+        for flag in ("--version", "-version", "version", "-V", "-h", "--help"):
             try:
                 r = subprocess.run(
                     [path, flag],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
                     timeout=8,
                 )
             except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
                 continue
-            if r.returncode == 0:
+
+            combined = f"{r.stdout or ''}{r.stderr or ''}".lower()
+            if any(m in combined for m in unknown_flag_markers):
+                continue  # this flag is not supported; try the next one
+
+            # Either a clean exit, or a help dump (which some tools exit 2 on).
+            if r.returncode == 0 or "usage" in combined:
                 self.tool_paths[tool] = path
                 return True
         return False
