@@ -1012,9 +1012,19 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
 
         self.log("Phase 2: Checking live hosts with httpx...", "INFO")
         live_output = f"{scan_dir}/live_subdomains.txt"
+        httpx_json = f"{scan_dir}/live_hosts.jsonl"
+        # -j writes JSONL (status code + tech per host); -td enables tech
+        # detection, which is what populates the technologies column. Without
+        # -td the "tech" field is absent from the JSON entirely.
+        #
+        # -j changes the format of -o, so live_subdomains.txt is no longer a
+        # plain URL list. Both files are written: -o for the JSONL, and the
+        # plain host list is derived from it below. Writing -o as JSONL and
+        # then reading it with _read_lines would yield raw JSON strings and
+        # make every host look dead.
         r = self._run_command([
-            self._tool_exe("httpx"), "-l", subfinder_output, "-o", live_output,
-            "-silent", "-mc", HTTPX_STATUS,
+            self._tool_exe("httpx"), "-l", subfinder_output, "-o", httpx_json,
+            "-silent", "-mc", HTTPX_STATUS, "-j", "-td",
         ])
         if not r.get("ok"):
             raise RuntimeError(
@@ -1022,20 +1032,35 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
                 f"{r.get('stderr', '').strip()[:200] or 'no output'}"
             )
 
-        live_hosts = self._read_lines(live_output)
-        self.log(f"Found {len(live_hosts)} live hosts", "SUCCESS")
+        # Parse the JSONL once; derive both the live-host set and the per-host
+        # metadata from it.
+        records = self.parse_httpx_jsonl(httpx_json)
+        meta = {rec["host"]: rec for rec in records if rec["host"]}
+        live_names = set(meta)
 
-        # httpx emits full URLs (https://host/path) while subfinder emits bare
-        # hostnames, so a plain membership test never matches. Normalise both
-        # sides to a bare hostname before comparing.
-        live_names = {self._hostname_of(h) for h in live_hosts}
-        live_names.discard("")
+        # Keep the plain-text live-host list for users and other tools.
+        with open(live_output, "w", encoding="utf-8") as f:
+            for rec in records:
+                if rec["url"]:
+                    f.write(rec["url"] + "\n")
+
+        self.log(f"Found {len(records)} live hosts", "SUCCESS")
+        self.log(f"Captured metadata for {len(meta)} host(s)", "INFO")
 
         cursor = self.conn.cursor()
         for subdomain in subdomains:
+            key = self._hostname_of(subdomain)
+            info = meta.get(key, {})
             cursor.execute(
-                "INSERT INTO subdomains (scan_id, subdomain, is_alive) VALUES (?, ?, ?)",
-                (scan_id, subdomain, self._hostname_of(subdomain) in live_names),
+                "INSERT INTO subdomains (scan_id, subdomain, is_alive, "
+                "status_code, technologies) VALUES (?, ?, ?, ?, ?)",
+                (
+                    scan_id,
+                    subdomain,
+                    key in live_names,
+                    info.get("status_code"),
+                    info.get("technologies"),
+                ),
             )
         self.conn.commit()
 
@@ -1209,6 +1234,41 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             except (json.JSONDecodeError, OSError):
                 pass
         self.log(f"Directory fuzzing completed - {count} paths found", "SUCCESS")
+
+    @staticmethod
+    def parse_httpx_jsonl(path):
+        """Parse httpx -jsonl output into host/status/tech dicts.
+
+        Returns a list of {'host', 'url', 'status_code', 'technologies'}.
+        Malformed lines are skipped: httpx can emit a partial final line if it
+        is killed, and one bad line must not lose the rest of the results.
+        """
+        rows = []
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        rec = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    host = rec.get("host") or BugBountyHunter._hostname_of(
+                        rec.get("url", "")
+                    )
+                    tech = rec.get("tech") or []
+                    if isinstance(tech, str):
+                        tech = [tech]
+                    rows.append({
+                        "host": host,
+                        "url": rec.get("url", ""),
+                        "status_code": rec.get("status_code"),
+                        "technologies": ", ".join(str(t) for t in tech),
+                    })
+        except OSError:
+            return []
+        return rows
 
     @staticmethod
     def _count_lines(path):

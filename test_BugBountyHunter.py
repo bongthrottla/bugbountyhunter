@@ -289,3 +289,27 @@ def test_count_lines_handles_missing(app_instance, tmp_path):
     real = tmp_path / "wl.txt"
     real.write_text("a\n\nb\n  \nc\n")
     assert app_instance._count_lines(real) == 3
+
+
+def test_parse_httpx_jsonl_captures_status_and_tech(app_instance, tmp_path):
+    """httpx -jsonl output must populate status_code and technologies.
+
+    These columns exist in the schema but were never written, so reports could
+    not show a status code or tech stack.
+    """
+    httpx_out = tmp_path / "live.jsonl"
+    httpx_out.write_text(
+        '{"url":"https://api.example.com","status_code":200,'
+        '"tech":["nginx","React"],"host":"api.example.com"}\n'
+        '{"url":"https://dead.example.com","status_code":403,'
+        '"tech":["Cloudflare"],"host":"dead.example.com"}\n'
+        'not json\n'
+    )
+
+    rows = app_instance.parse_httpx_jsonl(str(httpx_out))
+
+    assert len(rows) == 2
+    assert rows[0]["host"] == "api.example.com"
+    assert rows[0]["status_code"] == 200
+    assert rows[0]["technologies"] == "nginx, React"
+    assert rows[1]["status_code"] == 403
