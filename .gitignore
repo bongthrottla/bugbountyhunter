@@ -26,3 +26,6 @@ Thumbs.db
 # Local config overrides
 config.local.ini
 .env
+
+# Agent planning notes
+.hermes/

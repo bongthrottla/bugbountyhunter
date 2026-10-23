@@ -59,7 +59,7 @@ SCAN_TYPES = [
     ("Basic Recon (Subdomains + Live Check)", "basic"),
     ("Comprehensive Scan (Recon + Vulnerabilities)", "comprehensive"),
     ("Quick XSS Hunt", "xss"),
-    ("SQLi Discovery", "sqli"),
+    ("SQLi Guidance (manual workflow, no scan)", "sqli"),
     ("Directory Fuzzing", "dirfuzz"),
     ("Custom Workflow", "custom"),
 ]

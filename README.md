@@ -35,8 +35,9 @@ reports.
 ### 📊 Professional Reporting
 - **Markdown Reports**: Professional vulnerability documentation
 - **Multiple Templates**: Executive, technical, and detailed findings
-- **Automated Evidence**: Screenshot integration and proof collection
 - **Industry Standards**: Reports formatted for bug bounty submissions
+- **Scan integrity record**: every report states which tools ran, which
+  failed, and what was not tested
 
 ### 🎓 Beginner Guidance
 - **Platform Recommendations**: Curated list of beginner-friendly programs
