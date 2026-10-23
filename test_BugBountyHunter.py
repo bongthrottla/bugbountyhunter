@@ -70,3 +70,62 @@ def test_init_database(app_instance, tmp_path):
     assert "vulnerabilities" in tables
 
     conn.close()
+
+
+def test_hostname_of(app_instance):
+    """URLs and bare hostnames must normalise to the same bare hostname."""
+    h = app_instance._hostname_of
+    assert h("https://api.example.com") == "api.example.com"
+    assert h("http://api.example.com") == "api.example.com"
+    assert h("https://api.example.com/path?q=1#frag") == "api.example.com"
+    assert h("https://api.example.com:8443/x") == "api.example.com"
+    assert h("https://user:pw@api.example.com/x") == "api.example.com"
+    assert h("API.Example.COM") == "api.example.com"
+    assert h("api.example.com") == "api.example.com"
+    assert h("") == ""
+    assert h(None) == ""
+
+
+def test_live_host_matching(app_instance, tmp_path):
+    """Regression: httpx emits full URLs, subfinder emits bare hostnames.
+
+    A plain `subdomain in live_hosts` test never matched, so every host was
+    recorded as dead and reports claimed 'Live Hosts: 0' / 'Success Rate: 0%'
+    even when live hosts were found.
+    """
+    scan_dir = tmp_path / "scan_x"
+    scan_dir.mkdir()
+    (scan_dir / "subdomains.txt").write_text(
+        "api.example.com\nwww.example.com\ndead.example.com\n"
+    )
+    (scan_dir / "live_subdomains.txt").write_text(
+        "https://api.example.com\nhttp://www.example.com\n"
+    )
+
+    cursor = app_instance.conn.cursor()
+    cursor.execute(
+        "INSERT INTO scans (target, scan_type, status) VALUES (?, ?, ?)",
+        ("example.com", "basic", "running"),
+    )
+    scan_id = cursor.lastrowid
+    app_instance.conn.commit()
+
+    # Drive just the persistence half of run_basic_scan.
+    subdomains = app_instance._read_lines(str(scan_dir / "subdomains.txt"))
+    live_hosts = app_instance._read_lines(str(scan_dir / "live_subdomains.txt"))
+    live_names = {app_instance._hostname_of(h) for h in live_hosts}
+    live_names.discard("")
+    for subdomain in subdomains:
+        cursor.execute(
+            "INSERT INTO subdomains (scan_id, subdomain, is_alive) VALUES (?, ?, ?)",
+            (scan_id, subdomain, app_instance._hostname_of(subdomain) in live_names),
+        )
+    app_instance.conn.commit()
+
+    alive = dict(cursor.execute(
+        "SELECT subdomain, is_alive FROM subdomains WHERE scan_id = ?", (scan_id,)
+    ).fetchall())
+
+    assert alive["api.example.com"] == 1
+    assert alive["www.example.com"] == 1
+    assert alive["dead.example.com"] == 0

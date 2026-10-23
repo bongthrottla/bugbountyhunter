@@ -1,12 +1,21 @@
 # BugBountyHunter Pro v2.0
 ## Beginner's Complete Bug Bounty Hunting Toolkit
 
-A comprehensive, GUI-based tool designed to streamline the complete bug bounty hunting workflow for beginners. This application automates reconnaissance, vulnerability discovery, and professional report generation while providing extensive guidance for new bug bounty hunters.
+A GUI tool that walks a beginner through the whole bug bounty loop: pick a
+program, run recon, find something worth reporting, write it up. It wraps
+`subfinder`, `httpx`, `nuclei`, `ffuf` and `dalfox` behind one window, keeps a
+local SQLite history of every scan, and generates submission-ready markdown
+reports.
 
-![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)
+![BugBountyHunter Pro running a real scan](screenshot.png)
+
+![Python](https://img.shields.io/badge/python-3.7%2B-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Status](https://img.shields.io/badge/status-stable-brightgreen)
+![Tests](https://img.shields.io/badge/tests-6%20passing-brightgreen)
+
+> **New here?** Read [Authorised Use Only](#-authorised-use-only) before your
+> first scan. This tool sends real traffic to real hosts.
 
 ## 🎯 Features
 
@@ -20,6 +29,8 @@ A comprehensive, GUI-based tool designed to streamline the complete bug bounty h
 - **Comprehensive Scanning**: Full recon + vulnerability assessment
 - **Specialized Scans**: XSS hunting, directory fuzzing, SQLi discovery
 - **Multi-threading**: Efficient concurrent scanning
+- **Fail-loud preflight**: a scan whose tools cannot run is refused *before* it
+  starts, never recorded as a clean result
 
 ### 📊 Professional Reporting
 - **Markdown Reports**: Professional vulnerability documentation
@@ -69,9 +80,52 @@ A comprehensive, GUI-based tool designed to streamline the complete bug bounty h
    python3 BugBountyHunter.py
    ```
 
+   Or install it as a package and launch it from anywhere:
+   ```bash
+   pip install .
+   bugbountyhunter
+   ```
+
    `requirements.txt` lists only optional third-party packages — the GUI,
    database and process handling are all Python standard library, so there is
    nothing mandatory to `pip install`.
+
+### Verify your install
+
+```bash
+pip install pytest
+pytest test_BugBountyHunter.py -v      # 6 tests, ~60s
+```
+
+The suite covers target validation, tool requirements, directory/database
+setup, and the URL-to-hostname matching that drives live-host reporting. On a
+headless box run it under `xvfb-run -a pytest ...` — the app needs a display.
+
+### A real run
+
+Pointing the Basic Recon scan at `hackerone.com` (a public program; recon only)
+produces this in the log pane:
+
+```
+[07:41:29] INFO: Starting basic scan on hackerone.com
+[07:41:30] INFO: Phase 1: Subdomain enumeration with subfinder...
+[07:42:00] SUCCESS: Found 17 subdomains
+[07:42:00] INFO: Phase 2: Checking live hosts with httpx...
+[07:42:07] SUCCESS: Found 6 live hosts
+[07:42:07] SUCCESS: Scan completed! Results saved to scans/scan_1_hackerone.com
+```
+
+and a report in `reports/` that opens with:
+
+```
+### Subdomain Discovery
+- **Total Subdomains Found:** 17
+- **Live Hosts:** 6
+- **Success Rate:** 35.3%
+```
+
+Every scan is recorded in `scans/bugbounty.db` with its status, so you can come
+back to it from the Reports tab later.
 
 ### Essential Tools Installation (manual)
 

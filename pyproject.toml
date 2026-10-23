@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bugbountyhunter-pro"
+version = "2.0.0"
+description = "Beginner's complete bug bounty hunting toolkit — GUI recon, scanning and reporting"
+readme = "README.md"
+requires-python = ">=3.7"
+license = "MIT"
+keywords = ["bug-bounty", "recon", "security", "subfinder", "httpx", "nuclei", "gui"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: X11 Applications",
+    "Intended Audience :: Education",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+
+[project.urls]
+Homepage = "https://github.com/bongthrottla/bugbountyhunter"
+Issues = "https://github.com/bongthrottla/bugbountyhunter/issues"
+
+[project.scripts]
+bugbountyhunter = "BugBountyHunter:main"
+
+[tool.setuptools]
+py-modules = ["BugBountyHunter"]
+
+[tool.setuptools.package-data]
+"*" = ["data/*.txt", "wordlists/*.txt"]
+
+[tool.setuptools.data-files]
+"share/bugbountyhunter/data" = ["data/tips_guide.txt", "data/install_guide.txt"]
+"share/bugbountyhunter/wordlists" = ["wordlists/common.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["test_BugBountyHunter.py"]

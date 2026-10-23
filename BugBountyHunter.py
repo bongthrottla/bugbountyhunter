@@ -29,6 +29,7 @@ if os.path.isdir(_gobin):
 import shutil
 import sqlite3
 import subprocess
+import sys
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -103,6 +104,10 @@ class BugBountyHunter:
         self.create_gui()
         self._log_tool_resolution()
         self.load_program_data()
+
+        # Closing the window mid-scan would otherwise leave the child tool
+        # running and the scan row stuck at status='running' forever.
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     # ------------------------------------------------------------------
     # Setup helpers
@@ -551,13 +556,31 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         """
         self._fill_readonly_text(parent, content)
 
+    @staticmethod
+    def _read_data_file(relative_path, fallback):
+        """Read a bundled data file, trying repo layout then installed layout.
+
+        Works both when running from a clone (BASE_DIR/data/...) and when
+        installed via pip (sys.prefix/share/bugbountyhunter/...).
+        """
+        candidates = [
+            BASE_DIR / relative_path,
+            Path(__file__).resolve().parent / relative_path,
+            Path(sys.prefix) / "share" / "bugbountyhunter" / relative_path,
+        ]
+        for path in candidates:
+            try:
+                return path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+        return fallback
+
     def create_tips_guide(self, parent):
         """Display beginner tips loaded from data/tips_guide.txt."""
-        tips_file = BASE_DIR / "data" / "tips_guide.txt"
-        try:
-            content = tips_file.read_text(encoding="utf-8")
-        except OSError:
-            content = "Tips guide not found. Please ensure data/tips_guide.txt exists."
+        content = self._read_data_file(
+            "data/tips_guide.txt",
+            "Tips guide not found. Please ensure data/tips_guide.txt exists.",
+        )
         self._fill_readonly_text(parent, content)
 
     def create_tools_tab(self):
@@ -576,11 +599,10 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
                                        padding="10")
         install_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
-        install_file = BASE_DIR / "data" / "install_guide.txt"
-        try:
-            install_content = install_file.read_text(encoding="utf-8")
-        except OSError:
-            install_content = "Install guide not found. Please ensure data/install_guide.txt exists."
+        install_content = self._read_data_file(
+            "data/install_guide.txt",
+            "Install guide not found. Please ensure data/install_guide.txt exists.",
+        )
 
         install_text = scrolledtext.ScrolledText(install_frame, wrap=tk.WORD,
                                                  font=("Arial", 11))
@@ -823,6 +845,55 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             self._schedule(lambda: self.status_label.config(
                 text="Scan completed", fg="green"))
 
+    def on_close(self):
+        """Handle window close: stop any running scan, then tear down cleanly.
+
+        Without this, closing the window mid-scan orphans the child tool
+        process and leaves the scan row at status='running' forever.
+        """
+        scan_alive = self.current_scan is not None and self.current_scan.is_alive()
+        if scan_alive:
+            if not messagebox.askokcancel(
+                "Quit",
+                "A scan is still running. Quit anyway?\n\n"
+                "The running tool will be terminated and the scan marked stopped.",
+            ):
+                return
+            self.stop_requested = True
+
+        # Terminate the active child tool so it does not outlive the GUI.
+        proc = self.current_process
+        if proc is not None and proc.poll() is None:
+            try:
+                proc.terminate()
+            except OSError:
+                pass
+
+        # Give the scan thread a moment to unwind and record its final status.
+        if scan_alive and self.current_scan is not None:
+            self.current_scan.join(timeout=5)
+
+        self._mark_scan_stopped()
+
+        try:
+            if self.conn is not None:
+                self.conn.close()
+        except sqlite3.Error:
+            pass
+
+        self.root.destroy()
+
+    def _mark_scan_stopped(self):
+        """Mark any scan left in 'running' as 'stopped' so history stays honest."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "UPDATE scans SET status = 'stopped' WHERE status = 'running'"
+            )
+            self.conn.commit()
+        except sqlite3.Error:
+            pass
+
     def _mark_scan_failed(self, scan_id):
         if scan_id is None:
             return
@@ -935,13 +1006,42 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         live_hosts = self._read_lines(live_output)
         self.log(f"Found {len(live_hosts)} live hosts", "SUCCESS")
 
+        # httpx emits full URLs (https://host/path) while subfinder emits bare
+        # hostnames, so a plain membership test never matches. Normalise both
+        # sides to a bare hostname before comparing.
+        live_names = {self._hostname_of(h) for h in live_hosts}
+        live_names.discard("")
+
         cursor = self.conn.cursor()
         for subdomain in subdomains:
             cursor.execute(
                 "INSERT INTO subdomains (scan_id, subdomain, is_alive) VALUES (?, ?, ?)",
-                (scan_id, subdomain, subdomain in live_hosts),
+                (scan_id, subdomain, self._hostname_of(subdomain) in live_names),
             )
         self.conn.commit()
+
+    @staticmethod
+    def _hostname_of(value):
+        """Reduce a URL or hostname to a bare, lowercased hostname.
+
+        'https://api.example.com:443/x' -> 'api.example.com'
+        'API.Example.com'               -> 'api.example.com'
+        """
+        if not value:
+            return ""
+        text = value.strip()
+        if "://" in text:
+            text = text.split("://", 1)[1]
+        # strip path, query and fragment
+        for sep in ("/", "?", "#"):
+            if sep in text:
+                text = text.split(sep, 1)[0]
+        # strip userinfo and port
+        if "@" in text:
+            text = text.rsplit("@", 1)[1]
+        if ":" in text:
+            text = text.split(":", 1)[0]
+        return text.strip().lower()
 
     def run_comprehensive_scan(self, target, scan_dir, scan_id):
         """Run the basic recon pipeline then a Nuclei vulnerability scan."""
