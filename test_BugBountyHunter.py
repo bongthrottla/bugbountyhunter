@@ -167,3 +167,77 @@ def test_live_host_matching(app_instance, tmp_path):
     assert alive["api.example.com"] == 1
     assert alive["www.example.com"] == 1
     assert alive["dead.example.com"] == 0
+
+
+def test_parse_nuclei_results_skips_malformed(app_instance, tmp_path):
+    """Malformed JSON lines must be skipped without losing valid findings.
+
+    nuclei emits JSONL; a truncated or non-JSON line must not abort the parse
+    or silently drop the rows around it.
+    """
+    nuclei_output = tmp_path / "nuclei_results.json"
+    nuclei_output.write_text(
+        '{"template-id": "xss-vuln", "info": {"severity": "high", "name": "Reflected XSS"}, "matched-at": "http://example.com/xss"}\n'
+        'This is not a json string\n'
+        '{"missing_bracket": true\n'
+        '{"template-id": "sqli-vuln", "info": {"severity": "critical", "name": "SQL Injection"}, "matched-at": "http://example.com/sqli"}\n'
+    )
+
+    cursor = app_instance.conn.cursor()
+    cursor.execute(
+        "INSERT INTO scans (target, scan_type, status) VALUES (?, ?, ?)",
+        ("example.com", "comprehensive", "completed"),
+    )
+    scan_id = cursor.lastrowid
+    app_instance.conn.commit()
+
+    app_instance.parse_nuclei_results(str(nuclei_output), scan_id)
+
+    rows = cursor.execute(
+        "SELECT vuln_type, severity, description, url FROM vulnerabilities WHERE scan_id = ?",
+        (scan_id,),
+    ).fetchall()
+
+    assert len(rows) == 2
+    assert rows[0] == ("xss-vuln", "high", "Reflected XSS", "http://example.com/xss")
+    assert rows[1] == ("sqli-vuln", "critical", "SQL Injection", "http://example.com/sqli")
+
+
+def test_parse_nuclei_results_batching(app_instance, tmp_path):
+    """The 1000-row insert batch boundary must not lose or duplicate rows."""
+    for count in (0, 1, 999, 1000, 1001, 2500):
+        nuclei_output = tmp_path / f"nuclei_{count}.json"
+        with open(nuclei_output, "w") as f:
+            for i in range(count):
+                f.write(
+                    '{"template-id": "t%d", "info": {"severity": "high", "name": "n%d"}, "matched-at": "https://x/%d"}\n'
+                    % (i, i, i)
+                )
+
+        cursor = app_instance.conn.cursor()
+        cursor.execute(
+            "INSERT INTO scans (target, scan_type, status) VALUES (?, ?, ?)",
+            ("example.com", "comprehensive", "running"),
+        )
+        scan_id = cursor.lastrowid
+        app_instance.conn.commit()
+
+        app_instance.parse_nuclei_results(str(nuclei_output), scan_id)
+
+        stored = cursor.execute(
+            "SELECT COUNT(*) FROM vulnerabilities WHERE scan_id = ?", (scan_id,)
+        ).fetchone()[0]
+        assert stored == count, f"input {count} stored {stored}"
+
+
+def test_scan_output_permissions(app_instance, tmp_path):
+    """Scan output holds live target data and must not be world-readable."""
+    import stat
+
+    if os.name == "nt":
+        pytest.skip("POSIX permissions not applicable on Windows")
+
+    for name in ("scans", "reports", "outputs"):
+        mode = (tmp_path / name).stat().st_mode
+        assert not (mode & stat.S_IROTH), f"{name} is world-readable"
+        assert not (mode & stat.S_IWOTH), f"{name} is world-writable"

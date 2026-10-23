@@ -135,14 +135,29 @@ class BugBountyHunter:
         return BASE_DIR
 
     def setup_directories(self):
-        """Create all directories required for scan output and data storage."""
+        """Create all directories required for scan output and data storage.
+
+        Directories are created owner-only (0700). Scan output contains live
+        target reconnaissance data, so it should not be world-readable on a
+        shared machine.
+        """
         self._resolve_base_dir()
         for name in OUTPUT_DIRS:
-            (BASE_DIR / name).mkdir(parents=True, exist_ok=True)
+            path = BASE_DIR / name
+            path.mkdir(parents=True, exist_ok=True)
+            try:
+                os.chmod(path, 0o700)
+            except OSError:
+                pass  # e.g. a filesystem without POSIX permissions (Windows)
 
     def init_database(self):
         """Initialise the SQLite database that stores scan results."""
         self.conn = sqlite3.connect(str(DB_PATH), check_same_thread=False, timeout=30)
+        # The scan history is target intelligence; keep it owner-only.
+        try:
+            os.chmod(str(DB_PATH), 0o600)
+        except OSError:
+            pass  # Windows, or a filesystem without POSIX permissions
         cursor = self.conn.cursor()
         cursor.execute(
             """
@@ -784,6 +799,10 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
 
             scan_dir = BASE_DIR / "scans" / f"scan_{scan_id}_{target}"
             scan_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                os.chmod(scan_dir, 0o700)
+            except OSError:
+                pass  # Windows, or a filesystem without POSIX permissions
 
             handlers = {
                 "basic": self.run_basic_scan,
