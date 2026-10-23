@@ -1174,9 +1174,13 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             self.log("ffuf not installed - skipping directory fuzzing", "WARNING")
             return
 
-        wordlist_path = BASE_DIR / "wordlists" / "common.txt"
-        if not wordlist_path.exists():
-            self.create_basic_wordlist(str(wordlist_path))
+        wordlist_path = self._pick_wordlist()
+        if wordlist_path is None:
+            fallback = BASE_DIR / "wordlists" / "common.txt"
+            self.create_basic_wordlist(str(fallback))
+            wordlist_path = fallback
+        self.log(f"Directory fuzzing with {wordlist_path.name} "
+                 f"({self._count_lines(wordlist_path)} entries)", "INFO")
 
         dirfuzz_output = f"{scan_dir}/directories.json"
         r = self._run_command([
@@ -1205,6 +1209,71 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             except (json.JSONDecodeError, OSError):
                 pass
         self.log(f"Directory fuzzing completed - {count} paths found", "SUCCESS")
+
+    @staticmethod
+    def _count_lines(path):
+        """Count non-empty lines in a wordlist, without loading it all."""
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                return sum(1 for line in f if line.strip())
+        except OSError:
+            return 0
+
+    def _pick_wordlist(self):
+        """Choose the best available directory-fuzzing wordlist.
+
+        Prefers a user-supplied or system-installed list over the bundled one,
+        then the bundled SecLists-derived lists. Returns None if nothing is
+        available, so the caller can generate a minimal fallback.
+        """
+        candidates = []
+
+        # 1. Explicit override in config.ini, if set.
+        configured = self._configured_wordlist()
+        if configured:
+            candidates.append(Path(configured).expanduser())
+
+        # 2. System SecLists / dirb installs (what Kali ships).
+        candidates += [
+            Path("/usr/share/seclists/Discovery/Web-Content/raft-small-directories.txt"),
+            Path("/usr/share/seclists/Discovery/Web-Content/common.txt"),
+            Path("/usr/share/wordlists/dirb/common.txt"),
+            Path("/usr/share/dirb/wordlists/common.txt"),
+            Path("/usr/share/wfuzz/wordlist/general/common.txt"),
+        ]
+
+        # 3. Bundled lists (shipped in the repo and in the wheel).
+        candidates += [
+            BASE_DIR / "wordlists" / "raft-small-directories.txt",
+            BASE_DIR / "wordlists" / "common.txt",
+            Path(__file__).resolve().parent / "wordlists" / "raft-small-directories.txt",
+            Path(__file__).resolve().parent / "wordlists" / "common.txt",
+            Path(sys.prefix) / "share" / "bugbountyhunter" / "wordlists" / "raft-small-directories.txt",
+            Path(sys.prefix) / "share" / "bugbountyhunter" / "wordlists" / "common.txt",
+        ]
+
+        for path in candidates:
+            try:
+                if path.is_file() and path.stat().st_size > 0:
+                    return path
+            except OSError:
+                continue
+        return None
+
+    def _configured_wordlist(self):
+        """Read wordlist_path from config.ini if present, else empty string."""
+        import configparser
+        try:
+            parser = configparser.ConfigParser()
+            for cfg in (BASE_DIR / "config.ini", Path(__file__).resolve().parent / "config.ini"):
+                if cfg.is_file():
+                    parser.read(cfg)
+                    if parser.has_option("scanning", "wordlist_path"):
+                        return parser.get("scanning", "wordlist_path").strip()
+                    break
+        except (OSError, configparser.Error):
+            pass
+        return ""
 
     @staticmethod
     def create_basic_wordlist(path):

@@ -34,7 +34,10 @@ py-modules = ["BugBountyHunter"]
 
 [tool.setuptools.data-files]
 "share/bugbountyhunter/data" = ["data/tips_guide.txt", "data/install_guide.txt"]
-"share/bugbountyhunter/wordlists" = ["wordlists/common.txt"]
+"share/bugbountyhunter/wordlists" = [
+    "wordlists/common.txt",
+    "wordlists/raft-small-directories.txt",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["test_BugBountyHunter.py"]

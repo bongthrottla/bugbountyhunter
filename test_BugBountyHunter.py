@@ -2,6 +2,7 @@ import pytest
 import os
 import sqlite3
 import tkinter as tk
+from pathlib import Path
 from BugBountyHunter import BugBountyHunter
 
 @pytest.fixture
@@ -241,3 +242,50 @@ def test_scan_output_permissions(app_instance, tmp_path):
         mode = (tmp_path / name).stat().st_mode
         assert not (mode & stat.S_IROTH), f"{name} is world-readable"
         assert not (mode & stat.S_IWOTH), f"{name} is world-writable"
+
+
+def test_bundled_wordlists_present_and_sane(app_instance):
+    """The shipped wordlists must exist, be non-trivial, and be clean.
+
+    A leading slash in an entry produces a doubled '//path' request and a false
+    negative, so it is checked explicitly.
+    """
+    wl_dir = Path(__file__).resolve().parent / "wordlists"
+    for name, minimum in (("common.txt", 1000), ("raft-small-directories.txt", 5000)):
+        path = wl_dir / name
+        assert path.is_file(), f"{name} missing from the repo"
+        entries = [
+            line.strip()
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines()
+            if line.strip()
+        ]
+        assert len(entries) >= minimum, f"{name} only has {len(entries)} entries"
+        assert not [e for e in entries if e.startswith("/")], f"{name} has leading slashes"
+        assert len(entries) == len(set(entries)), f"{name} has duplicate entries"
+        assert not [e for e in entries if any(ord(c) > 126 for c in e)], f"{name} has non-ASCII"
+
+
+def test_pick_wordlist_prefers_bundled(app_instance):
+    """With no system install and no config override, the bundled list is used."""
+    picked = app_instance._pick_wordlist()
+    assert picked is not None
+    assert picked.is_file()
+    assert app_instance._count_lines(picked) > 1000
+
+
+def test_pick_wordlist_honours_config(app_instance, tmp_path, monkeypatch):
+    """A wordlist_path in config.ini takes precedence."""
+    custom = tmp_path / "custom.txt"
+    custom.write_text("alpha\nbeta\n")
+
+    monkeypatch.setattr(
+        app_instance, "_configured_wordlist", lambda: str(custom)
+    )
+    assert app_instance._pick_wordlist() == custom
+
+
+def test_count_lines_handles_missing(app_instance, tmp_path):
+    assert app_instance._count_lines(tmp_path / "nope.txt") == 0
+    real = tmp_path / "wl.txt"
+    real.write_text("a\n\nb\n  \nc\n")
+    assert app_instance._count_lines(real) == 3
