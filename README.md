@@ -52,12 +52,26 @@ reports.
 
 ## 🚀 Quick Start
 
-### Prerequisites
-1. **Python 3.7+** with tkinter support (`sudo apt install python3-tk` on Debian/Ubuntu)
-2. **Go Language** (for installing the reconnaissance tools)
-3. **Git**
+### One-click install (Linux / macOS)
 
-### Installation
+```bash
+curl -fsSL https://raw.githubusercontent.com/bongthrottla/bugbountyhunter/main/install.sh | bash
+```
+
+That clones the repo to `~/bugbountyhunter`, checks Python and tkinter, downloads
+the reconnaissance tools as prebuilt binaries into `~/.local/bin`, adds that to
+your `PATH`, and verifies everything. **No Go toolchain needed.** Re-running it
+updates an existing install in place.
+
+Then:
+
+```bash
+cd ~/bugbountyhunter && python3 BugBountyHunter.py
+```
+
+### Manual install
+
+Only **Python 3.7+ with tkinter** is required. Everything else is optional.
 
 1. **Clone the repository**
    ```bash
@@ -65,13 +79,12 @@ reports.
    cd bugbountyhunter
    ```
 
-2. **Install the reconnaissance tools** (recommended one-shot)
+2. **Install the reconnaissance tools**
    ```bash
-   chmod +x install.sh
-   ./install.sh
+   ./scripts/install-tools.sh
    ```
-   This checks Python/tkinter, creates the data directories, installs the Go
-   tools, updates nuclei templates, and verifies each binary.
+   Downloads prebuilt release binaries for subfinder, httpx, nuclei, ffuf, gau
+   and dalfox into `~/.local/bin`. It prints the `PATH` line to add.
 
    On Windows, use `install.ps1` (PowerShell) instead.
 
@@ -89,6 +102,15 @@ reports.
    `requirements.txt` lists only optional third-party packages — the GUI,
    database and process handling are all Python standard library, so there is
    nothing mandatory to `pip install`.
+
+### If a tool is missing
+
+The app still starts and tells you exactly which tools are unavailable, and a
+scan whose tools cannot run is refused before it begins rather than reported as
+a clean result. Re-run `scripts/install-tools.sh` when you have network access.
+
+`assetfinder` is the one tool with no prebuilt binaries — it is built from
+source only if Go is present, and skipped otherwise. Nothing depends on it.
 
 ### Verify your install
 
