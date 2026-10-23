@@ -1498,6 +1498,20 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         live = live or 0
         success_rate = (live / max(total, 1) * 100)
 
+        cursor.execute(
+            """
+            SELECT subdomain, status_code, technologies
+            FROM subdomains WHERE scan_id = ? AND is_alive = 1
+            ORDER BY subdomain
+            """,
+            (scan_id,),
+        )
+        live_rows = cursor.fetchall()
+        live_table = "\n".join(
+            f"| `{h}` | {s if s else '—'} | {t if t else '—'} |"
+            for h, s, t in live_rows
+        ) or "| — | — | — |"
+
         report = f"""# Bug Bounty Reconnaissance Report
 
 **Target:** {target}  
@@ -1515,6 +1529,12 @@ This report contains the findings from an automated reconnaissance and vulnerabi
 - **Total Subdomains Found:** {total}
 - **Live Hosts:** {live}
 - **Success Rate:** {success_rate:.1f}%
+
+### Live Hosts
+
+| Host | Status | Technologies |
+|---|---|---|
+{live_table}
 
 ## Vulnerability Assessment
 
