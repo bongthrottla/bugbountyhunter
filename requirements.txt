@@ -1,0 +1,12 @@
+# BugBountyHunter Pro - Python dependencies
+#
+# The GUI, database, threading and process handling are all Python standard
+# library (tkinter, sqlite3, threading, subprocess, json, pathlib, re, os, sys)
+# and need no installation.
+#
+# Optional extras:
+# requests>=2.31.0     # only if you extend the tool with direct HTTP calls
+# colorama>=0.4.6      # only if you add coloured terminal output
+#
+# The reconnaissance binaries (subfinder, httpx, nuclei, ffuf, dalfox) are Go
+# programs installed separately — see the Installation section of README.md.

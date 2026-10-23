@@ -1,0 +1,37 @@
+🔧 QUICK INSTALLATION GUIDE
+
+PREREQUISITES:
+1. Install Go: https://golang.org/dl/
+2. Add ~/go/bin to your PATH
+3. Restart terminal after installation
+
+ESSENTIAL TOOLS - COPY & PASTE COMMANDS:
+
+# Install ProjectDiscovery tools
+go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest  
+go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+go install -v github.com/projectdiscovery/katana/cmd/katana@latest
+
+# Install additional recon tools
+go install github.com/ffuf/ffuf@latest
+go install github.com/hahwul/dalfox/v2@latest
+go install github.com/lc/gau@latest
+go install github.com/tomnomnom/assetfinder@latest
+
+# Update nuclei templates
+nuclei -update-templates
+
+VERIFICATION:
+After installation, run these commands to verify:
+subfinder -version
+httpx -version  
+nuclei -version
+ffuf -version
+
+TROUBLESHOOTING:
+- If "command not found": Add ~/go/bin to PATH
+- On Windows: Use PowerShell as administrator
+- On Linux/Mac: Use terminal with appropriate permissions
+
+For detailed guides, visit: https://docs.projectdiscovery.io/
