@@ -12,7 +12,7 @@ reports.
 ![Python](https://img.shields.io/badge/python-3.7%2B-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-9%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-16%20passing-brightgreen)
 
 > **New here?** Read [Authorised Use Only](#-authorised-use-only) before your
 > first scan. This tool sends real traffic to real hosts.
@@ -94,7 +94,7 @@ reports.
 
 ```bash
 pip install pytest
-pytest test_BugBountyHunter.py -v      # 9 tests, ~2min
+pytest test_BugBountyHunter.py -v      # 16 tests, ~3min
 ```
 
 The suite covers target validation, tool requirements, directory/database
