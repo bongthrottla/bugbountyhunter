@@ -1074,6 +1074,9 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
 
         cursor = self.conn.cursor()
         vuln_count = 0
+        # Batch inserts: a comprehensive scan can return thousands of findings,
+        # and one INSERT per row is needlessly slow. Flush every 1000 rows.
+        records = []
         with open(nuclei_output, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
@@ -1089,15 +1092,29 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
                 description = result.get("info", {}).get("name", "No description")
                 url = result.get("matched-at", "")
 
-                cursor.execute(
-                    """
-                    INSERT INTO vulnerabilities (scan_id, vuln_type, severity,
-                                                 description, url)
-                    VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (scan_id, vuln_type, severity, description, url),
-                )
+                records.append((scan_id, vuln_type, severity, description, url))
                 vuln_count += 1
+
+                if len(records) >= 1000:
+                    cursor.executemany(
+                        """
+                        INSERT INTO vulnerabilities (scan_id, vuln_type, severity,
+                                                     description, url)
+                        VALUES (?, ?, ?, ?, ?)
+                        """,
+                        records,
+                    )
+                    records = []
+
+        if records:
+            cursor.executemany(
+                """
+                INSERT INTO vulnerabilities (scan_id, vuln_type, severity,
+                                             description, url)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                records,
+            )
 
         self.conn.commit()
         self.log(f"Found {vuln_count} potential vulnerabilities", "SUCCESS")
