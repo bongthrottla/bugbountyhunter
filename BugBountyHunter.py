@@ -1580,7 +1580,8 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         self._write_report(filename, self.generate_markdown_report(
             scan_id, target, scan_type, timestamp))
 
-    def generate_markdown_report(self, scan_id, target, scan_type, timestamp):
+    def generate_markdown_report(self, scan_id, target, scan_type, timestamp,
+                                 previous_scan_id=None):
         """Build the comprehensive markdown report content."""
         cursor = self.conn.cursor()
 
@@ -1631,6 +1632,25 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             for h, s, t in live_rows
         ) or "| — | — | — |"
 
+        # If we know the prior scan, report what changed. Auto-discover it when
+        # the caller did not pass one, so the button path gets this for free.
+        if previous_scan_id is None:
+            previous_scan_id = self.previous_scan_id(target, scan_id)
+        change_section = ""
+        if previous_scan_id:
+            d = self.diff_scans(previous_scan_id, scan_id)
+            change_section = f"\n## Changes Since Scan #{previous_scan_id}\n\n"
+            change_section += f"- **New hosts:** {len(d['added'])}\n"
+            for h in d["added"][:20]:
+                change_section += f"  - `{h}`\n"
+            if len(d["added"]) > 20:
+                change_section += f"  - ... and {len(d['added']) - 20} more\n"
+            change_section += f"- **No longer seen:** {len(d['removed'])}\n"
+            for h in d["removed"][:20]:
+                change_section += f"  - `{h}`\n"
+            if not d["added"] and not d["removed"]:
+                change_section += "- No change since the previous scan.\n"
+
         report = f"""# Bug Bounty Reconnaissance Report
 
 **Target:** {target}  
@@ -1662,7 +1682,7 @@ This report contains the findings from an automated reconnaissance and vulnerabi
 | Host | Status | Technologies |
 |---|---|---|
 {live_table}
-
+{change_section}
 ## Vulnerability Assessment
 
 ### Summary by Severity
