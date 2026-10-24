@@ -390,3 +390,33 @@ def test_previous_scan_id_finds_earlier_completed_scan(app_instance):
     assert app_instance.previous_scan_id("example.com", third) == first
     assert app_instance.previous_scan_id("example.com", first) is None
     assert app_instance.previous_scan_id("other.com", third) is None
+
+
+def test_export_scan_json(app_instance, tmp_path):
+    """A scan must be exportable as JSON for other tools and diff pipelines."""
+    import json as _json
+
+    cur = app_instance.conn.cursor()
+    cur.execute("INSERT INTO scans (target,scan_type,status) VALUES (?,?,?)",
+                ("example.com", "basic", "completed"))
+    sid = cur.lastrowid
+    cur.execute("INSERT INTO subdomains (scan_id,subdomain,is_alive,status_code,technologies)"
+                " VALUES (?,?,?,?,?)", (sid, "api.example.com", 1, 200, "nginx"))
+    cur.execute("INSERT INTO vulnerabilities (scan_id,vuln_type,severity,description,url)"
+                " VALUES (?,?,?,?,?)", (sid, "xss", "high", "Reflected XSS", "https://x/1"))
+    app_instance.conn.commit()
+
+    out = tmp_path / "export.json"
+    app_instance.export_scan_json(sid, str(out))
+
+    data = _json.loads(out.read_text())
+    assert data["target"] == "example.com"
+    assert data["subdomains"][0]["subdomain"] == "api.example.com"
+    assert data["subdomains"][0]["status_code"] == 200
+    assert data["vulnerabilities"][0]["severity"] == "high"
+
+
+def test_export_scan_json_rejects_unknown_scan(app_instance, tmp_path):
+    import pytest as _pytest
+    with _pytest.raises(ValueError):
+        app_instance.export_scan_json(999999, str(tmp_path / "nope.json"))

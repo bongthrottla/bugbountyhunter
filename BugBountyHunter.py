@@ -647,6 +647,17 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
                 height=2,
             ).pack(fill="x", pady=2)
 
+        tk.Button(
+            report_frame,
+            text="Export JSON (selected scan)",
+            command=self.export_selected_scan_json,
+            bg="#607D8B",
+            fg="white",
+            font=("Arial", 11),
+            height=2,
+            cursor="hand2",
+        ).pack(fill="x", pady=2)
+
     # ------------------------------------------------------------------
     # Tool status
     # ------------------------------------------------------------------
@@ -1001,7 +1012,7 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
 
     def integrity_confidence(self):
         """FULL if every recorded tool succeeded, NONE if all failed, else PARTIAL."""
-        outcomes = list((self.scan_integrity or {}).values())
+        outcomes = list((getattr(self, "scan_integrity", None) or {}).values())
         if not outcomes:
             return "NONE"
         good = sum(1 for o in outcomes if o["ok"])
@@ -1014,7 +1025,7 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
     def format_integrity_lines(self):
         """Human-readable per-tool outcome lines, for the report and the log."""
         lines = []
-        for tool, outcome in (self.scan_integrity or {}).items():
+        for tool, outcome in (getattr(self, "scan_integrity", None) or {}).items():
             if outcome["ok"]:
                 lines.append(f"- `{tool}`: ok ({outcome['detail']})")
             else:
@@ -1353,6 +1364,60 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             (target, before_scan_id),
         ).fetchone()
         return row[0] if row else None
+
+    def export_scan_json(self, scan_id, path):
+        """Write one scan to JSON so it can feed other tools or a diff pipeline."""
+        scan = self.conn.execute(
+            "SELECT id, target, scan_type, timestamp, status FROM scans WHERE id = ?",
+            (scan_id,),
+        ).fetchone()
+        if not scan:
+            raise ValueError(f"no scan with id {scan_id}")
+
+        subs = [
+            {"subdomain": r[0], "is_alive": bool(r[1]),
+             "status_code": r[2], "technologies": r[3]}
+            for r in self.conn.execute(
+                "SELECT subdomain, is_alive, status_code, technologies "
+                "FROM subdomains WHERE scan_id = ? ORDER BY subdomain",
+                (scan_id,),
+            )
+        ]
+        vulns = [
+            {"vuln_type": r[0], "severity": r[1], "description": r[2],
+             "url": r[3], "proof": r[4]}
+            for r in self.conn.execute(
+                "SELECT vuln_type, severity, description, url, proof "
+                "FROM vulnerabilities WHERE scan_id = ?",
+                (scan_id,),
+            )
+        ]
+
+        payload = {
+            "scan_id": scan[0],
+            "target": scan[1],
+            "scan_type": scan[2],
+            "timestamp": scan[3],
+            "status": scan[4],
+            "confidence": self.integrity_confidence(),
+            "integrity": getattr(self, "scan_integrity", None) or {},
+            "subdomains": subs,
+            "vulnerabilities": vulns,
+        }
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        return path
+
+    def export_selected_scan_json(self):
+        """Export the selected scan to JSON in reports/."""
+        scan = self._get_scan(self._selected_scan_id())
+        if not scan:
+            messagebox.showinfo("No Data", "No completed scans found. Please run a scan first.")
+            return
+        scan_id, target, _type, _ts, _ = scan
+        path = BASE_DIR / "reports" / f"scan_{scan_id}_{target}.json"
+        self.export_scan_json(scan_id, str(path))
+        self.log(f"Exported JSON to {path}", "SUCCESS")
 
     @staticmethod
     def parse_httpx_jsonl(path):
