@@ -346,3 +346,47 @@ def test_scan_integrity_none_when_all_failed(app_instance):
     app_instance.scan_integrity = {}
     app_instance._record_integrity("subfinder", ok=False, detail="not found")
     assert app_instance.integrity_confidence() == "NONE"
+
+
+def test_diff_scans_reports_new_and_removed_hosts(app_instance):
+    """Comparing two scans must surface what changed since last time."""
+    cur = app_instance.conn.cursor()
+
+    cur.execute("INSERT INTO scans (target,scan_type,status) VALUES (?,?,?)",
+                ("example.com", "basic", "completed"))
+    old = cur.lastrowid
+    cur.execute("INSERT INTO scans (target,scan_type,status) VALUES (?,?,?)",
+                ("example.com", "basic", "completed"))
+    new = cur.lastrowid
+
+    for host in ("a.example.com", "b.example.com", "gone.example.com"):
+        cur.execute("INSERT INTO subdomains (scan_id,subdomain,is_alive) VALUES (?,?,?)",
+                    (old, host, 1))
+    for host in ("a.example.com", "b.example.com", "new.example.com"):
+        cur.execute("INSERT INTO subdomains (scan_id,subdomain,is_alive) VALUES (?,?,?)",
+                    (new, host, 1))
+    app_instance.conn.commit()
+
+    d = app_instance.diff_scans(old, new)
+
+    assert d["added"] == ["new.example.com"]
+    assert d["removed"] == ["gone.example.com"]
+    assert d["unchanged"] == ["a.example.com", "b.example.com"]
+
+
+def test_previous_scan_id_finds_earlier_completed_scan(app_instance):
+    cur = app_instance.conn.cursor()
+    cur.execute("INSERT INTO scans (target,scan_type,status) VALUES (?,?,?)",
+                ("example.com", "basic", "completed"))
+    first = cur.lastrowid
+    cur.execute("INSERT INTO scans (target,scan_type,status) VALUES (?,?,?)",
+                ("example.com", "basic", "failed"))
+    cur.execute("INSERT INTO scans (target,scan_type,status) VALUES (?,?,?)",
+                ("example.com", "basic", "completed"))
+    third = cur.lastrowid
+    app_instance.conn.commit()
+
+    # A failed scan must not be used as a comparison baseline.
+    assert app_instance.previous_scan_id("example.com", third) == first
+    assert app_instance.previous_scan_id("example.com", first) is None
+    assert app_instance.previous_scan_id("other.com", third) is None

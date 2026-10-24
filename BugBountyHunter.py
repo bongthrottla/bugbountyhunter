@@ -777,6 +777,7 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         # which is indistinguishable from "no findings" and gets recorded as a
         # completed scan that never actually ran.
         self.scan_integrity = {}
+        scan_id = None
         missing = self._require_tools(scan_type)
         if missing:
             self._record_integrity(
@@ -839,10 +840,10 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
 
         except FileNotFoundError as exc:
             self.log(f"Required tool not found: {exc.filename}", "ERROR")
-            self._mark_scan_failed(scan_id if "scan_id" in locals() else None)
+            self._mark_scan_failed(scan_id)
         except Exception as exc:  # noqa: BLE001 - surface all tool failures to the UI
             self.log(f"Scan failed: {exc}", "ERROR")
-            self._mark_scan_failed(scan_id if "scan_id" in locals() else None)
+            self._mark_scan_failed(scan_id)
 
         finally:
             self.stop_requested = False
@@ -854,6 +855,25 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             self.log(f"Scan integrity: {confidence}", "INFO")
             for line in self.format_integrity_lines():
                 self.log(f"  {line}", "INFO")
+
+            # If we have scanned this target before, say what changed. New
+            # subdomains on a known target are the highest-signal recon finding.
+            if scan_id is not None:
+                prev = self.previous_scan_id(target, scan_id)
+                if prev:
+                    d = self.diff_scans(prev, scan_id)
+                    if d["added"]:
+                        shown = ", ".join(d["added"][:10])
+                        more = " ..." if len(d["added"]) > 10 else ""
+                        self.log(
+                            f"NEW since scan #{prev}: {shown}{more}", "SUCCESS"
+                        )
+                    if d["removed"]:
+                        self.log(
+                            f"No longer seen: {len(d['removed'])} host(s)", "INFO"
+                        )
+                    if not d["added"] and not d["removed"]:
+                        self.log("No change since the previous scan", "INFO")
 
             self._schedule(lambda: self.progress.stop())
             self._schedule(lambda: self.status_label.config(
@@ -1297,6 +1317,42 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
             except (json.JSONDecodeError, OSError):
                 pass
         self.log(f"Directory fuzzing completed - {count} paths found", "SUCCESS")
+
+    def diff_scans(self, old_scan_id, new_scan_id):
+        """Compare two scans of the same target.
+
+        Returns {'added', 'removed', 'unchanged'} lists of subdomains. This is
+        what turns a one-shot scan into something worth re-running: new
+        subdomains on a target you already know are the highest-signal finding
+        in recon.
+        """
+        def hosts(scan_id):
+            return {
+                row[0]
+                for row in self.conn.execute(
+                    "SELECT subdomain FROM subdomains WHERE scan_id = ?",
+                    (scan_id,),
+                )
+            }
+
+        old, new = hosts(old_scan_id), hosts(new_scan_id)
+        return {
+            "added": sorted(new - old),
+            "removed": sorted(old - new),
+            "unchanged": sorted(old & new),
+        }
+
+    def previous_scan_id(self, target, before_scan_id):
+        """The most recent completed scan of this target before the given one."""
+        row = self.conn.execute(
+            """
+            SELECT id FROM scans
+            WHERE target = ? AND id < ? AND status = 'completed'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (target, before_scan_id),
+        ).fetchone()
+        return row[0] if row else None
 
     @staticmethod
     def parse_httpx_jsonl(path):
