@@ -1,18 +1,37 @@
 # BugBountyHunter Pro v2.0
-## Beginner's Complete Bug Bounty Hunting Toolkit
+## Beginner's recon that tells you the truth about what it found
 
-A GUI tool that walks a beginner through the whole bug bounty loop: pick a
-program, run recon, find something worth reporting, write it up. It wraps
-`subfinder`, `httpx`, `nuclei`, `ffuf` and `dalfox` behind one window, keeps a
-local SQLite history of every scan, and generates submission-ready markdown
-reports.
+Every recon wrapper has the same silent failure. A tool dies — rate limit, bad
+API key, no network — writes an empty output file, and the report says "no
+findings". You conclude the target is clean and move on. That is the single
+most expensive mistake in bug bounty, and it is invisible.
+
+This tool refuses to do it. Every scan records which tools actually ran, and
+every report states its own confidence:
+
+```
+**Scan Confidence:** PARTIAL
+
+## Scan Integrity
+
+- `subfinder`: ok (exit 0)
+- `httpx`: ok (exit 0)
+- `nuclei`: **FAILED** — exit 1: no templates installed
+```
+
+If nuclei failed, the report says so instead of implying you have no
+vulnerabilities.
 
 ![BugBountyHunter Pro running a real scan](screenshot.png)
 
 ![Python](https://img.shields.io/badge/python-3.7%2B-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-16%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-24%20passing-brightgreen)
+
+**What it does not do:** it is not a replacement for reNgine, reconftw or bbot.
+Those orchestrate far more tools. This is a small, readable, beginner-focused
+tool that does five things and is honest about all of them.
 
 > **New here?** Read [Authorised Use Only](#-authorised-use-only) before your
 > first scan. This tool sends real traffic to real hosts.
@@ -50,6 +69,20 @@ reports.
 - **Scan History**: Track all previous assessments
 - **Result Correlation**: Link subdomains, vulnerabilities, and evidence
 - **Export Capabilities**: Multiple output formats
+
+## How it compares
+
+| | BugBountyHunter | reNgine | reconftw | bbot |
+|---|---|---|---|---|
+| Interface | desktop GUI | web GUI | CLI | CLI |
+| Install | one curl, no Go | Docker | bash + 80 tools | pip |
+| Tools orchestrated | 5 | ~20 | 80+ | modular |
+| Change detection | yes | yes | no | no |
+| **Reports its own confidence** | **yes** | no | no | no |
+| Beginner guidance built in | yes | no | no | no |
+
+Pick reNgine if you want maximum coverage and continuous monitoring. Pick this
+if you want to understand every step and trust the output.
 
 ## 🚀 Quick Start
 
