@@ -313,3 +313,36 @@ def test_parse_httpx_jsonl_captures_status_and_tech(app_instance, tmp_path):
     assert rows[0]["status_code"] == 200
     assert rows[0]["technologies"] == "nginx, React"
     assert rows[1]["status_code"] == 403
+
+
+def test_scan_integrity_records_tool_outcomes(app_instance):
+    """Every scan must record which tools ran and which failed.
+
+    This is the feature no competitor has: a scan that cannot prove it ran is
+    indistinguishable from a clean target, which is the worst outcome for a
+    beginner.
+    """
+    app_instance.scan_integrity = {}
+
+    app_instance._record_integrity("subfinder", ok=True, detail="exit 0")
+    app_instance._record_integrity("httpx", ok=True, detail="exit 0")
+    app_instance._record_integrity("nuclei", ok=False, detail="exit 1: no templates")
+
+    lines = app_instance.format_integrity_lines()
+
+    assert any("subfinder" in l and "ok" in l.lower() for l in lines)
+    assert any("nuclei" in l and "FAILED" in l for l in lines)
+    assert app_instance.integrity_confidence() == "PARTIAL"
+
+
+def test_scan_integrity_full_when_all_ok(app_instance):
+    app_instance.scan_integrity = {}
+    app_instance._record_integrity("subfinder", ok=True, detail="exit 0")
+    app_instance._record_integrity("httpx", ok=True, detail="exit 0")
+    assert app_instance.integrity_confidence() == "FULL"
+
+
+def test_scan_integrity_none_when_all_failed(app_instance):
+    app_instance.scan_integrity = {}
+    app_instance._record_integrity("subfinder", ok=False, detail="not found")
+    assert app_instance.integrity_confidence() == "NONE"

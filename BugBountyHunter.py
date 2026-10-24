@@ -776,13 +776,23 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         # Otherwise a tool that exists but fails yields an empty result file,
         # which is indistinguishable from "no findings" and gets recorded as a
         # completed scan that never actually ran.
+        self.scan_integrity = {}
         missing = self._require_tools(scan_type)
         if missing:
+            self._record_integrity(
+                "preflight", ok=False,
+                detail=f"required tools not usable: {', '.join(missing)}",
+            )
             self.log(
                 f"Cannot run '{scan_type}' scan — required tool(s) not usable: "
                 f"{', '.join(missing)}. Install them (see Tools tab) and retry.",
                 "ERROR",
             )
+            # The refusal happens before the try/finally, so log the integrity
+            # record here too — otherwise a refused scan reports no reason.
+            self.log(f"Scan integrity: {self.integrity_confidence()}", "INFO")
+            for line in self.format_integrity_lines():
+                self.log(f"  {line}", "INFO")
             self._schedule(lambda: self.progress.stop())
             self._schedule(lambda: self.status_label.config(
                 text="Scan not started — missing tools", fg="red"))
@@ -837,9 +847,17 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         finally:
             self.stop_requested = False
             self.current_process = None
+
+            # Report what actually ran. A finding list is only meaningful if the
+            # tools behind it executed; this is what makes the scan honest.
+            confidence = self.integrity_confidence()
+            self.log(f"Scan integrity: {confidence}", "INFO")
+            for line in self.format_integrity_lines():
+                self.log(f"  {line}", "INFO")
+
             self._schedule(lambda: self.progress.stop())
             self._schedule(lambda: self.status_label.config(
-                text="Scan completed", fg="green"))
+                text=f"Scan {confidence.lower()} confidence", fg="green"))
 
     def on_close(self):
         """Handle window close: stop any running scan, then tear down cleanly.
@@ -931,12 +949,57 @@ Remember: Tools are just helpers - understanding vulnerabilities is key! 🧠
         ok = proc.returncode in (0, -15)
         if not ok and stderr.strip():
             self.log(f"[{' '.join(command)}] stderr: {stderr.strip()[:500]}", "WARNING")
+
+        # Record this invocation so the scan can report its own confidence.
+        # exit -15 is our own terminate() on stop, which is not a failure.
+        tool_name = os.path.basename(command[0]) if command else "unknown"
+        detail = f"exit {proc.returncode}"
+        if not ok and stderr.strip():
+            detail = f"exit {proc.returncode}: {stderr.strip().splitlines()[0][:120]}"
+        self._record_integrity(tool_name, ok=ok, detail=detail)
+
         return {
             "returncode": proc.returncode,
             "stdout": stdout,
             "stderr": stderr,
             "ok": ok,
         }
+
+    # ------------------------------------------------------------------
+    # Scan integrity
+    # ------------------------------------------------------------------
+    def _record_integrity(self, tool, ok, detail=""):
+        """Record the outcome of one tool invocation for this scan.
+
+        A scan is only as trustworthy as the tools that actually ran. Recording
+        this lets the report say 'nuclei failed, so no vulnerability scanning
+        happened' instead of implying the target is clean.
+        """
+        if not hasattr(self, "scan_integrity") or self.scan_integrity is None:
+            self.scan_integrity = {}
+        self.scan_integrity[tool] = {"ok": bool(ok), "detail": detail or ""}
+
+    def integrity_confidence(self):
+        """FULL if every recorded tool succeeded, NONE if all failed, else PARTIAL."""
+        outcomes = list((self.scan_integrity or {}).values())
+        if not outcomes:
+            return "NONE"
+        good = sum(1 for o in outcomes if o["ok"])
+        if good == len(outcomes):
+            return "FULL"
+        if good == 0:
+            return "NONE"
+        return "PARTIAL"
+
+    def format_integrity_lines(self):
+        """Human-readable per-tool outcome lines, for the report and the log."""
+        lines = []
+        for tool, outcome in (self.scan_integrity or {}).items():
+            if outcome["ok"]:
+                lines.append(f"- `{tool}`: ok ({outcome['detail']})")
+            else:
+                lines.append(f"- `{tool}`: **FAILED** — {outcome['detail']}")
+        return lines or ["- No tools were run."]
 
     def _require_tools(self, scan_type):
         """Preflight: return the list of required tools that are not usable.
