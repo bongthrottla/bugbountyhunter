@@ -36,7 +36,9 @@ from tkinter import messagebox, scrolledtext, ttk
 
 APP_NAME = "BugBountyHunter Pro - Beginner's Complete Toolkit v2.0"
 VERSION = "2.0"
-BASE_DIR = Path(__file__).resolve().parent
+# Resolved at runtime (see _resolve_base_dir) rather than at import time, so the
+# app writes into the directory it was launched from and tests can relocate it.
+BASE_DIR = Path.cwd()
 OUTPUT_DIRS = ["outputs", "scans", "reports", "wordlists", "configs"]
 DB_PATH = BASE_DIR / "scans" / "bugbounty.db"
 
@@ -105,8 +107,31 @@ class BugBountyHunter:
     # ------------------------------------------------------------------
     # Setup helpers
     # ------------------------------------------------------------------
+    def _resolve_base_dir(self):
+        """Resolve the writable base directory for this run.
+
+        Prefers the current working directory, but falls back to the directory
+        containing this file when the CWD is not writable (e.g. the app was
+        launched from a read-only location). Called before any path is used so
+        tests can relocate the app with chdir().
+        """
+        global BASE_DIR, DB_PATH
+        for candidate in (Path.cwd(), Path(__file__).resolve().parent):
+            try:
+                candidate.mkdir(parents=True, exist_ok=True)
+                probe = candidate / ".bbh_write_probe"
+                probe.touch(exist_ok=True)
+                probe.unlink(missing_ok=True)
+                BASE_DIR = candidate
+                DB_PATH = BASE_DIR / "scans" / "bugbounty.db"
+                return BASE_DIR
+            except OSError:
+                continue
+        return BASE_DIR
+
     def setup_directories(self):
         """Create all directories required for scan output and data storage."""
+        self._resolve_base_dir()
         for name in OUTPUT_DIRS:
             (BASE_DIR / name).mkdir(parents=True, exist_ok=True)
 

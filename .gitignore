@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+scans/
+outputs/
+reports/
+*.db
+*.log
